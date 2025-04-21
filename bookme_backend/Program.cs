@@ -1,3 +1,6 @@
+using bookme_backend;
+using bookme_backend.DataAcces.Repositories.Implementation;
+using bookme_backend.DataAcces.Repositories.Interfaces;
 
 namespace bookme_backend
 {
@@ -14,8 +17,11 @@ namespace bookme_backend
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
-            var app = builder.Build();
+            // Registrar repositorios
+            builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
+            var app = builder.Build();
+            
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
@@ -29,6 +35,7 @@ namespace bookme_backend
 
 
             app.MapControllers();
+
 
             app.Run();
         }
