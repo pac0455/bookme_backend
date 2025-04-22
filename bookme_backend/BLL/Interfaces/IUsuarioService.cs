@@ -4,9 +4,12 @@ namespace bookme_backend.BLL.Interfaces
 {
     public interface IUsuarioService
     {
-        Task<Usuario> RegistrarUsuarioAsync(string nombre, string email, string telefono, string contrasena);
-        Task<Usuario> RegistrarConGoogleAsync(string firebaseIdToken);
         Task<List<Usuario>> GetAllAsync();
-
+        Task<Usuario?> GetByIdAsync(int id);
+        Task<Usuario?> ObtenerPorFirebaseUidAsync(string uid);
+        Task<Usuario> CrearUsuarioAsync(Usuario usuario);
+        Task Update(Usuario usuario);
+        Task<Usuario> DeleteAsync(int id);
+        Task SaveChangesAsync();
     }
 }

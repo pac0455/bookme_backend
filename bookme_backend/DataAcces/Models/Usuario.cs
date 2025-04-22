@@ -36,7 +36,7 @@ public partial class Usuario
 
     [Column("rol")]
     [StringLength(255)]
-    public string? Rol { get; set; }
+    public ERol Rol { get; set; }
 
     [Column("fecha_registro", TypeName = "datetime")]
     public DateTime? FechaRegistro { get; set; }

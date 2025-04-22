@@ -6,6 +6,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using bookme_backend.DataAcces.Models;
 using bookme_backend.DataAcces.Repositories.Interfaces;
+using FirebaseAdmin.Auth;
+using bookme_backend.BLL.Interfaces;
+using bookme_backend.BLL.Services;
 
 namespace bookme_backend.UI
 {
@@ -13,35 +16,31 @@ namespace bookme_backend.UI
     [ApiController]
     public class UsuariosController : ControllerBase
     {
-        private readonly IUsuarioRepository _usuarioRepository;
+        private readonly IUsuarioService usuarioService;
 
         // Inyección de dependencias para el repositorio genérico
-        public UsuariosController(IUsuarioRepository usuarioRepository)
+        public UsuariosController(IUsuarioService usuarioService)
         {
-            _usuarioRepository = usuarioRepository;
+            this.usuarioService = usuarioService;
         }
 
         // GET: api/Usuarios
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Usuario>>> GetUsuarios()
-        {
-            var usuarios = await _usuarioRepository.GetAllAsync();
-            return Ok(usuarios);
-        }
-
-        // GET: api/Usuarios/5
+   
         [HttpGet("{id}")]
-        public async Task<ActionResult<Usuario>> GetUsuario(int id)
+        public async Task<IActionResult> GetUsuario(int id)
         {
-            var usuario = await _usuarioRepository.GetByIdAsync(id);
-
-            if (usuario == null)
+            try
             {
-                return NotFound();
+                var usuario = await usuarioService.GetByIdAsync(id);
+                return Ok(usuario);
             }
-
-            return Ok(usuario);
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { mensaje = ex.Message });
+            }
         }
+
+  
 
         // PUT: api/Usuarios/5
         [HttpPut("{id}")]
@@ -53,11 +52,11 @@ namespace bookme_backend.UI
             }
 
             // Aquí solo actualizas el usuario usando el repositorio genérico
-            _usuarioRepository.Update(usuario);
+            usuarioService.Update(usuario);
 
             try
             {
-                await _usuarioRepository.SaveChangesAsync();
+                await usuarioService.SaveChangesAsync();
             }
             catch (Exception)
             {
@@ -73,13 +72,47 @@ namespace bookme_backend.UI
 
             return NoContent();
         }
+        [HttpPost("auth/google")]
+        public async Task<IActionResult> LoginConGoogle([FromBody] string idToken)
+        {
+            try
+            {
+                FirebaseToken decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(idToken);
+                string uid = decodedToken.Uid;
 
+                var firebaseUser = await FirebaseAuth.DefaultInstance.GetUserAsync(uid);
+
+                // Verifica si ya existe el usuario
+                var usuarioExistente = await usuarioService.ObtenerPorFirebaseUidAsync(uid);
+                if (usuarioExistente != null)
+                {
+                    return Ok(usuarioExistente); // Ya existe
+                }
+
+                // Si no existe, lo creas
+                var nuevoUsuario = new Usuario
+                {
+                    Nombre = firebaseUser.DisplayName,
+                    Email = firebaseUser.Email,
+                    Telefono = firebaseUser.PhoneNumber,
+                    FirebaseUid = firebaseUser.Uid,
+                    FechaRegistro = DateTime.UtcNow,
+                    Rol = ERol.Cliente // O el que prefieras
+                };
+
+                var creado = await usuarioService.CrearUsuarioAsync(nuevoUsuario);
+                return CreatedAtAction("GetUsuario", new { id = nuevoUsuario.Id }, nuevoUsuario);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { mensaje = "Error al autenticar con Google", error = ex.Message });
+            }
+        }
         // POST: api/Usuarios
         [HttpPost]
         public async Task<ActionResult<Usuario>> PostUsuario(Usuario usuario)
         {
-            await _usuarioRepository.AddAsync(usuario);
-            await _usuarioRepository.SaveChangesAsync();
+            var creado = await usuarioService.CrearUsuarioAsync(usuario);
 
             return CreatedAtAction("GetUsuario", new { id = usuario.Id }, usuario);
         }
@@ -88,21 +121,17 @@ namespace bookme_backend.UI
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUsuario(int id)
         {
-            var usuario = await _usuarioRepository.GetByIdAsync(id);
-            if (usuario == null)
-            {
-                return NotFound();
-            }
+           
 
             // Usar eliminación lógica (soft delete) si es necesario
-            await _usuarioRepository.DeleteAsync(usuario);
+            var reponse= await usuarioService.DeleteAsync(id);
 
             return NoContent();
         }
 
         private bool UsuarioExists(int id)
         {
-            return _usuarioRepository.GetAllAsync().Result.Any(e => e.Id == id);
+            return usuarioService.GetAllAsync().Result.Any(e => e.Id == id);
         }
     }
 }

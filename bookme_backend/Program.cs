@@ -1,4 +1,6 @@
 using bookme_backend;
+using bookme_backend.BLL.Interfaces;
+using bookme_backend.BLL.Services;
 using bookme_backend.DataAcces.Repositories.Implementation;
 using bookme_backend.DataAcces.Repositories.Interfaces;
 
@@ -17,8 +19,12 @@ namespace bookme_backend
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
-            // Registrar repositorios
+            // Registrar servicios
             builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+            //Usuario
+            builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+            builder.Services.AddScoped<IUsuarioService, UsuarioService>();
+
 
             var app = builder.Build();
             
