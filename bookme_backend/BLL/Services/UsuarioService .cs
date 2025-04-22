@@ -18,10 +18,7 @@ namespace bookme_backend.BLL.Services
             return await _usuarioRepository.GetAllAsync();
         }
 
-        public async Task<Usuario?> GetByIdAsync(int id)
-        {
-            return await _usuarioRepository.GetByIdAsync(id);
-        }
+  
 
         public async Task<Usuario?> ObtenerPorFirebaseUidAsync(string uid)
         {
@@ -35,7 +32,7 @@ namespace bookme_backend.BLL.Services
             return usuario;
         }
 
-        public async Task<Usuario> GetByIdAsync(int id)
+        public async Task<Usuario?> GetByIdAsync(int id)
         {
             var usuario = await _usuarioRepository.GetByIdAsync(id);
             if (usuario == null)
@@ -54,6 +51,9 @@ namespace bookme_backend.BLL.Services
             _usuarioRepository.Update(usuario);
         }
 
-        
+        public Task<Usuario> DeleteAsync(int id)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
