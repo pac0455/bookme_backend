@@ -42,66 +42,13 @@ namespace bookme_backend.UI
 
   
 
-        // PUT: api/Usuarios/5
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutUsuario(int id, Usuario usuario)
-        {
-            if (id != usuario.Id)
-            {
-                return BadRequest();
-            }
-
-            // Aquí solo actualizas el usuario usando el repositorio genérico
-            usuarioService.Update(usuario);
-
-            try
-            {
-                await usuarioService.SaveChangesAsync();
-            }
-            catch (Exception)
-            {
-                if (!UsuarioExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
+     
         [HttpPost("auth/google")]
         public async Task<IActionResult> LoginConGoogle([FromBody] string idToken)
         {
             try
             {
-                FirebaseToken decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(idToken);
-                string uid = decodedToken.Uid;
-
-                var firebaseUser = await FirebaseAuth.DefaultInstance.GetUserAsync(uid);
-
-                // Verifica si ya existe el usuario
-                var usuarioExistente = await usuarioService.ObtenerPorFirebaseUidAsync(uid);
-                if (usuarioExistente != null)
-                {
-                    return Ok(usuarioExistente); // Ya existe
-                }
-
-                // Si no existe, lo creas
-                var nuevoUsuario = new Usuario
-                {
-                    Nombre = firebaseUser.DisplayName,
-                    Email = firebaseUser.Email,
-                    Telefono = firebaseUser.PhoneNumber,
-                    FirebaseUid = firebaseUser.Uid,
-                    FechaRegistro = DateTime.UtcNow,
-                    Rol = ERol.Cliente // O el que prefieras
-                };
-
-                var creado = await usuarioService.CrearUsuarioAsync(nuevoUsuario);
-                return CreatedAtAction("GetUsuario", new { id = nuevoUsuario.Id }, nuevoUsuario);
+                return Ok();
             }
             catch (Exception ex)
             {
@@ -121,17 +68,9 @@ namespace bookme_backend.UI
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUsuario(int id)
         {
-           
-
             // Usar eliminación lógica (soft delete) si es necesario
             var reponse= await usuarioService.DeleteAsync(id);
-
             return NoContent();
-        }
-
-        private bool UsuarioExists(int id)
-        {
-            return usuarioService.GetAllAsync().Result.Any(e => e.Id == id);
         }
     }
 }

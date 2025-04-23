@@ -17,7 +17,7 @@ public partial class Valoracione
     public int ReservaId { get; set; }
 
     [Column("usuario_id")]
-    public int UsuarioId { get; set; }
+    public string UsuarioId { get; set; } = null!;
 
     [Column("puntuacion")]
     public int? Puntuacion { get; set; }

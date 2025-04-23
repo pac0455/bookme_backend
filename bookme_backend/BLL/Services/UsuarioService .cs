@@ -1,16 +1,22 @@
-﻿using bookme_backend.BLL.Interfaces;
+﻿using Azure.Core;
+using bookme_backend.BLL.Interfaces;
 using bookme_backend.DataAcces.Models;
 using bookme_backend.DataAcces.Repositories.Interfaces;
+using Microsoft.AspNetCore.Cryptography.KeyDerivation;
+using System.Security.Cryptography;
+using System.Security.Policy;
 
 namespace bookme_backend.BLL.Services
 {
     public class UsuarioService : IUsuarioService
     {
         private readonly IUsuarioRepository _usuarioRepository;
+        private readonly IPasswordHelper _passwordHelper;
 
-        public UsuarioService(IUsuarioRepository usuarioRepository)
+        public UsuarioService(IUsuarioRepository usuarioRepository, IPasswordHelper passwordHelper)
         {
             _usuarioRepository = usuarioRepository;
+            _passwordHelper = passwordHelper;
         }
 
         public async Task<List<Usuario>> GetAllAsync()
@@ -18,18 +24,16 @@ namespace bookme_backend.BLL.Services
             return await _usuarioRepository.GetAllAsync();
         }
 
-  
-
         public async Task<Usuario?> ObtenerPorFirebaseUidAsync(string uid)
         {
             return await _usuarioRepository.GetByFirebaseUidAsync(uid);
         }
 
-        public async Task<Usuario> CrearUsuarioAsync(Usuario usuario)
+        public async Task<Usuario> CrearUsuarioAsync(Usuario user)
         {
-            await _usuarioRepository.AddAsync(usuario);
+            //user.PasswordHash = _passwordHelper.HashPassword(user, user.PasswordHash);
             await _usuarioRepository.SaveChangesAsync();
-            return usuario;
+            return user;
         }
 
         public async Task<Usuario?> GetByIdAsync(int id)
@@ -54,6 +58,10 @@ namespace bookme_backend.BLL.Services
         public Task<Usuario> DeleteAsync(int id)
         {
             throw new NotImplementedException();
+        }
+        private bool UsuarioExists(string id)
+        {
+            return _usuarioRepository.GetAllAsync().Result.Any(e => e.Id == id);
         }
     }
 }

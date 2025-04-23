@@ -17,7 +17,7 @@ public partial class Suscripcione
     public int IdNegocio { get; set; }
 
     [Column("id_usuario")]
-    public int IdUsuario { get; set; }
+    public string IdUsuario { get; set; } = null!;
 
     [Column("fecha_suscripcion", TypeName = "datetime")]
     public DateTime FechaSuscripcion { get; set; }

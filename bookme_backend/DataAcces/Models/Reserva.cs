@@ -17,7 +17,7 @@ public partial class Reserva
     public int NegocioId { get; set; }
 
     [Column("usuario_id")]
-    public int UsuarioId { get; set; }
+    public string UsuarioId { get; set; } = null!;
 
     [Column("fecha")]
     public DateOnly? Fecha { get; set; }

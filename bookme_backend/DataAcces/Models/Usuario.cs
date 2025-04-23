@@ -2,45 +2,20 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace bookme_backend.DataAcces.Models;
 
 [Table("usuarios")]
 [Index("Email", Name = "UQ__usuarios__AB6E6164E28DE90C", IsUnique = true)]
-public partial class Usuario
+[Index(nameof(FirebaseUid), Name = "UQ__usuarios__AB6E6164E28DE90S", IsUnique = true)]
+public partial class Usuario:  IdentityUser
 {
-    [Key]
-    [Column("id")]
-    public int Id { get; set; }
-
-    [Column("nombre")]
-    [StringLength(255)]
-    public string? Nombre { get; set; }
-
-    [Column("email")]
-    [StringLength(255)]
-    public string? Email { get; set; }
-
-    [Column("telefono")]
-    [StringLength(255)]
-    public string? Telefono { get; set; }
-
-    [Column("contrasena_hash")]
-    [StringLength(255)]
-    public string? ContrasenaHash { get; set; }
-
     [Column("firebase_uid")]
     [StringLength(255)]
     public string? FirebaseUid { get; set; }
-
-    [Column("rol")]
-    [StringLength(255)]
-    public ERol Rol { get; set; }
-
-    [Column("fecha_registro", TypeName = "datetime")]
-    public DateTime? FechaRegistro { get; set; }
-
+    //Relaciones
     [InverseProperty("Usuario")]
     public virtual ICollection<Reserva> Reservas { get; set; } = new List<Reserva>();
 
