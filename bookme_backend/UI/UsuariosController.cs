@@ -11,6 +11,7 @@ using bookme_backend.BLL.Interfaces;
 using bookme_backend.BLL.Services;
 using bookme_backend.DataAcces.DTO;
 using bookme_backend.BLL.Exceptions;
+using Microsoft.AspNetCore.Identity.Data;
 
 namespace bookme_backend.UI
 {
@@ -25,6 +26,31 @@ namespace bookme_backend.UI
         {
             this.usuarioService = usuarioService;
         }
+        //login
+        [HttpPost("login")]
+        public async Task<ActionResult<Usuario>> Login([FromBody] LoginRequest loginRequest)
+        {
+            try
+            {
+                var usuario = await usuarioService.Login(loginRequest.Email, loginRequest.Password);
+                return Ok(usuario); // Aquí podrías devolver un DTO o JWT
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound(new { mensaje = "El usuario no existe." });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Unauthorized(new { mensaje = "Contraseña incorrecta." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { mensaje = $"Error: {ex.Message}" });
+            }
+        }
+
+
+
         [HttpPost("signup/google")]
         public async Task<IActionResult> SignupWithGoogle([FromBody] UsuarioRegistroDto dto)
         {
@@ -62,12 +88,16 @@ namespace bookme_backend.UI
 
             return Ok(usuario);
         }
+
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Usuario>>> GetAll()
         {
             try
             {
                 var usuarios = await usuarioService.GetAllAsync();
+
+                if (usuarios == null) return NotFound("Objeto usuario no encontrado");
+                
                 return Ok(usuarios);
             }
             catch(Exception ex)

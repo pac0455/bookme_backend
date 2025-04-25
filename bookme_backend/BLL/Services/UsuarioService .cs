@@ -22,11 +22,30 @@ namespace bookme_backend.BLL.Services
         public async Task<Usuario?> GetByEmailAsync(string email){
             return await _usuarioRepository.GetByEmailAsync(email);
         }
+        public async Task<Usuario?> Login(string email, string password)
+        {
+            // Buscar el usuario por email
+            var user = await _usuarioRepository.GetByEmailAsync(email);
+
+            if (user == null)
+                throw new KeyNotFoundException("Usuario no encontrado.");
+
+            // Verificar contraseña con PasswordHelper
+            var isPasswordValid = _passwordHelper.VerifyPassword(user, user.PasswordHash, password);
+
+            if (!isPasswordValid)
+                throw new UnauthorizedAccessException("Contraseña incorrecta.");
+
+            return user;
+        }
+
+
 
         public async Task<List<Usuario>> GetAllAsync()
         {
             return await _usuarioRepository.GetAllAsync();
         }
+        
 
         public async Task<Usuario?> ObtenerPorFirebaseUidAsync(string uid)
         {
@@ -70,9 +89,6 @@ namespace bookme_backend.BLL.Services
         {
             throw new NotImplementedException();
         }
-        private bool UsuarioExists(string id)
-        {
-            return _usuarioRepository.GetAllAsync().Result.Any(e => e.Id == id);
-        }
+
     }
 }

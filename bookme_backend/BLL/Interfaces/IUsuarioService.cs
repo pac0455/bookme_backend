@@ -13,5 +13,7 @@ namespace bookme_backend.BLL.Interfaces
         Task<Usuario> DeleteAsync(int id);
         Task SaveChangesAsync();
         Task<Usuario?> GetByEmailAsync(string email);
+        Task<Usuario?> Login(string email, string password);
+
     }
 }
