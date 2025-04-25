@@ -40,20 +40,21 @@ public partial class BookmeContext : IdentityDbContext<Usuario>
             .HasOne(v => v.Reserva)
             .WithMany(r => r.Valoraciones)
             .HasForeignKey(v => v.ReservaId)
-            .OnDelete(DeleteBehavior.Restrict); // ⚠️ EVITA el error
+            .OnDelete(DeleteBehavior.Restrict); // ⚠️ EVITA el error DE MULTIPLES CASCADE APUNTANDO A UNA TABLA
 
         modelBuilder.Entity<Valoracione>()
             .HasOne(v => v.Usuario)
             .WithMany(u => u.Valoraciones)
             .HasForeignKey(v => v.UsuarioId)
-            .OnDelete(DeleteBehavior.Restrict); // ⚠️ EVITA el error
+            .OnDelete(DeleteBehavior.Restrict); //  EVITA el error DE MULTIPLES CASCADE APUNTANDO A UNA TABLA
 
         modelBuilder.Entity<ReservasServicio>()
        .HasOne(rs => rs.Reserva)
        .WithMany(r => r.ReservasServicios)
        .HasForeignKey(rs => rs.ReservaId)
-        .OnDelete(DeleteBehavior.Cascade); // ✅
+       .OnDelete(DeleteBehavior.Cascade); // ✅
 
+        //ESTO SE RESOLVERA CON TRIGGER
         modelBuilder.Entity<ReservasServicio>()
             .HasOne(rs => rs.Servicio)
             .WithMany(s => s.ReservasServicios)

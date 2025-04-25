@@ -1,4 +1,5 @@
 ﻿using Azure.Core;
+using bookme_backend.BLL.Exceptions;
 using bookme_backend.BLL.Interfaces;
 using bookme_backend.DataAcces.Models;
 using bookme_backend.DataAcces.Repositories.Interfaces;
@@ -18,6 +19,9 @@ namespace bookme_backend.BLL.Services
             _usuarioRepository = usuarioRepository;
             _passwordHelper = passwordHelper;
         }
+        public async Task<Usuario?> GetByEmailAsync(string email){
+            return await _usuarioRepository.GetByEmailAsync(email);
+        }
 
         public async Task<List<Usuario>> GetAllAsync()
         {
@@ -31,7 +35,14 @@ namespace bookme_backend.BLL.Services
 
         public async Task<Usuario> CrearUsuarioAsync(Usuario user)
         {
-            //user.PasswordHash = _passwordHelper.HashPassword(user, user.PasswordHash);
+            var existe = await _usuarioRepository.Exist(u => u.Email == user.Email || u.FirebaseUid == user.FirebaseUid);
+
+            if (existe) {
+                throw new EntityDuplicatedException("La entidad ya existe");
+            }
+            user.PasswordHash = _passwordHelper.HashPassword(user, user.PasswordHash);
+            await _usuarioRepository.AddAsync(user);
+
             await _usuarioRepository.SaveChangesAsync();
             return user;
         }

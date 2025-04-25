@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using bookme_backend.DataAcces.Repositories.Interfaces;
+using System.Linq.Expressions;
 
 namespace bookme_backend.DataAcces.Repositories.Implementation
 {
@@ -12,6 +13,10 @@ namespace bookme_backend.DataAcces.Repositories.Implementation
         {
             _context = context;
             _dbSet = context.Set<T>();
+        }
+        public virtual async Task<bool> Exist(Expression<Func<T, bool>> predicate)
+        {
+            return await _dbSet.AnyAsync(predicate);
         }
 
         public virtual async Task<List<T>> GetAllAsync()

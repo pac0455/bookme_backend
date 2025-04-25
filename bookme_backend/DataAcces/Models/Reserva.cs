@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 
 namespace bookme_backend.DataAcces.Models;
@@ -40,16 +41,19 @@ public partial class Reserva
 
     [ForeignKey("NegocioId")]
     [InverseProperty("Reservas")]
+    [JsonIgnore]
     public virtual Negocio Negocio { get; set; } = null!;
 
     [InverseProperty("Reserva")]
     public virtual ICollection<Pago> Pagos { get; set; } = new List<Pago>();
 
     [InverseProperty("Reserva")]
+    
     public virtual ICollection<ReservasServicio> ReservasServicios { get; set; } = new List<ReservasServicio>();
 
     [ForeignKey("UsuarioId")]
     [InverseProperty("Reservas")]
+    [JsonIgnore]
     public virtual Usuario Usuario { get; set; } = null!;
 
     [InverseProperty("Reserva")]

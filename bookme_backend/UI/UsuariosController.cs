@@ -9,6 +9,8 @@ using bookme_backend.DataAcces.Repositories.Interfaces;
 using FirebaseAdmin.Auth;
 using bookme_backend.BLL.Interfaces;
 using bookme_backend.BLL.Services;
+using bookme_backend.DataAcces.DTO;
+using bookme_backend.BLL.Exceptions;
 
 namespace bookme_backend.UI
 {
@@ -23,37 +25,56 @@ namespace bookme_backend.UI
         {
             this.usuarioService = usuarioService;
         }
-
-        // GET: api/Usuarios
-   
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetUsuario(int id)
+        [HttpPost("signup/google")]
+        public async Task<IActionResult> SignupWithGoogle([FromBody] UsuarioRegistroDto dto)
         {
             try
             {
-                var usuario = await usuarioService.GetByIdAsync(id);
-                return Ok(usuario);
+                var usuario = new Usuario
+                {
+                    FirebaseUid = dto.FirebaseUid,
+                    Email = dto.Email,
+                    UserName = dto.UserName,
+                    PhoneNumber = dto.PhoneNumber,
+                    PasswordHash = dto.Password
+                };
+                await usuarioService.CrearUsuarioAsync(usuario);
+                // Aquí puedes mapear reservas si es necesario
+
+                return CreatedAtAction("GetUsuario", new { id = usuario.Id }, usuario);
             }
-            catch (KeyNotFoundException ex)
+            catch (EntityDuplicatedException)
             {
-                return NotFound(new { mensaje = ex.Message });
+                return BadRequest(new { mensaje = "Ya existe un usuario con ese email." });
             }
+            catch (Exception ex) { return BadRequest(new { mensaje = $"{ex.Message} + \n: InnerException: {ex.InnerException}" }); }
+
         }
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Usuario>> GetUsuario(string id)
+        {
+            var usuario = await usuarioService.GetByEmailAsync(id);
 
-  
+            if (usuario == null)
+            {
+                return NotFound();
+            }
 
-     
-        [HttpPost("auth/google")]
-        public async Task<IActionResult> LoginConGoogle([FromBody] string idToken)
+            return Ok(usuario);
+        }
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<Usuario>>> GetAll()
         {
             try
             {
-                return Ok();
+                var usuarios = await usuarioService.GetAllAsync();
+                return Ok(usuarios);
             }
-            catch (Exception ex)
+            catch(Exception ex)
             {
-                return BadRequest(new { mensaje = "Error al autenticar con Google", error = ex.Message });
+                return BadRequest(new {description = ex});
             }
+           
         }
         // POST: api/Usuarios
         [HttpPost]
