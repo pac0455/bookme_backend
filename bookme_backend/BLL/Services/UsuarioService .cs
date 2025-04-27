@@ -52,14 +52,18 @@ namespace bookme_backend.BLL.Services
             return await _usuarioRepository.GetByFirebaseUidAsync(uid);
         }
 
-        public async Task<Usuario> CrearUsuarioAsync(Usuario user)
+        public async Task<Usuario> CrearUsuarioAsync(Usuario user, string password)
         {
-            var existe = await _usuarioRepository.Exist(u => u.Email == user.Email || u.FirebaseUid == user.FirebaseUid);
+            var existe = await _usuarioRepository.Exist(u =>
+                u.Email == user.Email ||
+                (user.FirebaseUid != null && u.FirebaseUid == user.FirebaseUid)
+            );
+
 
             if (existe) {
                 throw new EntityDuplicatedException("La entidad ya existe");
             }
-            user.PasswordHash = _passwordHelper.HashPassword(user, user.PasswordHash);
+            user.PasswordHash = _passwordHelper.HashPassword(user, password);
             await _usuarioRepository.AddAsync(user);
 
             await _usuarioRepository.SaveChangesAsync();

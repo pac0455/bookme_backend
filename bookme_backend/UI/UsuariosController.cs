@@ -12,6 +12,7 @@ using bookme_backend.BLL.Services;
 using bookme_backend.DataAcces.DTO;
 using bookme_backend.BLL.Exceptions;
 using Microsoft.AspNetCore.Identity.Data;
+using Microsoft.AspNetCore.Identity;
 
 namespace bookme_backend.UI
 {
@@ -20,11 +21,16 @@ namespace bookme_backend.UI
     public class UsuariosController : ControllerBase
     {
         private readonly IUsuarioService usuarioService;
+        private readonly UserManager<Usuario> _userManager;
+
+
 
         // Inyección de dependencias para el repositorio genérico
-        public UsuariosController(IUsuarioService usuarioService)
+        public UsuariosController(IUsuarioService usuarioService, UserManager<Usuario> userManager)
         {
             this.usuarioService = usuarioService;
+            _userManager = userManager;
+
         }
         //login
         [HttpPost("login")]
@@ -48,34 +54,34 @@ namespace bookme_backend.UI
                 return BadRequest(new { mensaje = $"Error: {ex.Message}" });
             }
         }
+       
 
 
-
-        [HttpPost("signup/google")]
-        public async Task<IActionResult> SignupWithGoogle([FromBody] UsuarioRegistroDto dto)
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] UsuarioRegistroDto model)
         {
-            try
-            {
-                var usuario = new Usuario
-                {
-                    FirebaseUid = dto.FirebaseUid,
-                    Email = dto.Email,
-                    UserName = dto.UserName,
-                    PhoneNumber = dto.PhoneNumber,
-                    PasswordHash = dto.Password
-                };
-                await usuarioService.CrearUsuarioAsync(usuario);
-                // Aquí puedes mapear reservas si es necesario
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-                return CreatedAtAction("GetUsuario", new { id = usuario.Id }, usuario);
-            }
-            catch (EntityDuplicatedException)
+            var user = new Usuario
             {
-                return BadRequest(new { mensaje = "Ya existe un usuario con ese email." });
-            }
-            catch (Exception ex) { return BadRequest(new { mensaje = $"{ex.Message} + \n: InnerException: {ex.InnerException}" }); }
+                UserName = model.UserName,
+                Email = model.Email,
+                PhoneNumber = model.PhoneNumber,
+                FirebaseUid = model.FirebaseUid
+            };
 
+            var result = await _userManager.CreateAsync(user, model.Password);
+
+            if (!result.Succeeded)
+            {
+                var errors = result.Errors.Select(e => e.Description);
+                return BadRequest(new { Errors = errors });
+            }
+
+            return Ok("Usuario registrado exitosamente");
         }
+    
         [HttpGet("{id}")]
         public async Task<ActionResult<Usuario>> GetUsuario(string id)
         {
@@ -102,18 +108,11 @@ namespace bookme_backend.UI
             }
             catch(Exception ex)
             {
-                return BadRequest(new {description = ex});
+                return BadRequest(new {description = ex.StackTrace});
             }
            
         }
-        // POST: api/Usuarios
-        [HttpPost]
-        public async Task<ActionResult<Usuario>> PostUsuario(Usuario usuario)
-        {
-            var creado = await usuarioService.CrearUsuarioAsync(usuario);
-
-            return CreatedAtAction("GetUsuario", new { id = usuario.Id }, usuario);
-        }
+   
 
         // DELETE: api/Usuarios/5
         [HttpDelete("{id}")]
