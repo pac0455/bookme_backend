@@ -27,5 +27,4 @@ namespace bookme_backend.BLL.Services
             return result == PasswordVerificationResult.Success;
         }
     }
-
 }

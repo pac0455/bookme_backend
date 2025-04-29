@@ -94,12 +94,10 @@ namespace bookme_backend
             builder.Services.AddScoped<IUsuarioService, UsuarioService>();
             // Debe estar ANTES de builder.Build()
 
-            // O alternativamente:
             // Registra primero la implementación concreta como Singleton
-            builder.Services.AddSingleton<EmailSender>();
 
-            // Elimina TODOS los registros previos y usa solo este:
-            builder.Services.AddSingleton<IEmailSender<Usuario>, EmailSender>();
+
+            builder.Services.AddScoped<ICustomEmailSender, EmailSender>();
 
 
 
@@ -124,7 +122,7 @@ namespace bookme_backend
 
                 // Política de confirmación de correo electrónico
                 options.User.RequireUniqueEmail = true; // Requiere que el correo electrónico sea único
-                options.SignIn.RequireConfirmedAccount = true; // Importante para recuperación
+                options.SignIn.RequireConfirmedAccount = false; // Importante para recuperación
 
             })
             .AddErrorDescriber<IdentityErrorDescriberEs>() // 👈 Aquí cambiamos el idioma
@@ -150,7 +148,7 @@ namespace bookme_backend
             app.UseAuthorization();
 
             app.MapControllers();
-            app.MapIdentityApi<Usuario>();  // Debe ir después de UseRouting
+            //app.MapIdentityApi<Usuario>();  // Debe ir después de UseRouting
 
             app.Run();
 
