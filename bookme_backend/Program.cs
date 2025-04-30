@@ -95,8 +95,6 @@ namespace bookme_backend
             // Debe estar ANTES de builder.Build()
 
             // Registra primero la implementación concreta como Singleton
-
-
             builder.Services.AddScoped<ICustomEmailSender, EmailSender>();
 
 

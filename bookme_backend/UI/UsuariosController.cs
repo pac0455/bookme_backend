@@ -57,7 +57,6 @@ namespace bookme_backend.UI.Controllers
                 UserName = model.UserName,
                 Email = model.Email,
                 PhoneNumber = model.PhoneNumber,
-                FirebaseUid = model.FirebaseUid
             };
 
             var result = await _userManager.CreateAsync(user, model.Password);
