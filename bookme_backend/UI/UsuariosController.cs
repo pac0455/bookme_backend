@@ -8,35 +8,42 @@ using System.Text;
 using bookme_backend.DataAcces.Models;
 using bookme_backend.DataAcces.DTO;
 using Microsoft.AspNetCore.Identity.UI.Services;
-using bookme_backend.BLL.Services; // Cambia por el namespace correcto si tu modelo Usuario está en otro sitio
+using bookme_backend.BLL.Services;
+using Org.BouncyCastle.Utilities;
+using bookme_backend.BLL.Interfaces; // Cambia por el namespace correcto si tu modelo Usuario está en otro sitio
 
 namespace bookme_backend.UI.Controllers
 {
     [ApiController]
-    [Route("api/auth")]
-    public class AuthController : ControllerBase
+    [Route("api/[controller]")]
+    public class UsuarioController : ControllerBase
     {
         private readonly UserManager<Usuario> _userManager;
+        private readonly IUsuarioService _usuarioService;
+
         private readonly SignInManager<Usuario> _signInManager;
         private readonly IConfiguration _configuration;
         private readonly ICustomEmailSender _emailSender;
-        private readonly ILogger<AuthController> _logger;
+        private readonly ILogger<UsuarioController> _logger;
 
 
 
 
-        public AuthController(
+        public UsuarioController(
             UserManager<Usuario> userManager,
             SignInManager<Usuario> signInManager,
             IConfiguration configuration,
             ICustomEmailSender emailSender,
-            ILogger<AuthController> logger)
+            ILogger<UsuarioController> logger,
+            IUsuarioService usuarioService
+            )
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _configuration = configuration;
             _emailSender = emailSender;
             _logger = logger;
+            _usuarioService = usuarioService;
         }
 
 
@@ -173,7 +180,7 @@ namespace bookme_backend.UI.Controllers
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
-        [HttpPost("forgotpassword")]
+        [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDTO model)
         {
             if (!ModelState.IsValid)
@@ -193,7 +200,7 @@ namespace bookme_backend.UI.Controllers
 
             return Ok("Se ha enviado un enlace para restablecer la contraseña.");
         }
-        [HttpPost("resetpassword")]
+        [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto model)
         {
 
@@ -208,6 +215,19 @@ namespace bookme_backend.UI.Controllers
                 return BadRequest(result.Errors);
 
             return Ok("La contraseña se ha restablecido correctamente.");
+        }
+        [HttpGet]
+        public async Task<IActionResult> GetAllUsers()
+        {
+            try{
+                var users = await _usuarioService.GetAllAsync();
+                return Ok(users);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener usuarios");
+                return StatusCode(500, ex.Message);
+            }
         }
     }
 }
