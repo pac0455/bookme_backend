@@ -9,9 +9,8 @@ namespace bookme_backend.BLL.Interfaces
         Task<List<Usuario>> GetAllAsync();
         Task<Usuario?> GetByIdAsync(int id);
         Task<Usuario?> ObtenerPorFirebaseUidAsync(string uid);
-        Task<Usuario> CrearUsuarioAsync(Usuario usuario, string passwrod);
         Task Update(Usuario usuario);
-        Task<(bool Success, string Message)> DeleteAsync(string id);
+        Task<(bool Success, string Message)> DeleteAsync(string email);
         Task SaveChangesAsync();
         Task<Usuario?> GetByEmailAsync(string email);
         Task<LoginResultDTO> Login(string email, string password);

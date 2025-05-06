@@ -121,9 +121,10 @@ namespace bookme_backend.UI.Controllers
                 if (!success)
                 {
                     return BadRequest(message);
+
                 }
 
-                return Ok(new { message });
+                return Ok(message);
             }
             catch (Exception ex)
             {

@@ -176,25 +176,7 @@ namespace bookme_backend.BLL.Services
             return await _usuarioRepository.GetByFirebaseUidAsync(uid);
         }
 
-        public async Task<Usuario> CrearUsuarioAsync(Usuario user, string password)
-        {
-            var existe = await _usuarioRepository.Exist(u =>
-                u.Email == user.Email ||
-                (user.FirebaseUid != null && u.FirebaseUid == user.FirebaseUid)
-            );
-
-
-            if (existe)
-            {
-                throw new EntityDuplicatedException("La entidad ya existe");
-            }
-            user.PasswordHash = _passwordHelper.HashPassword(user, password);
-            await _usuarioRepository.AddAsync(user);
-
-            await _usuarioRepository.SaveChangesAsync();
-            return user;
-        }
-
+       
         public async Task<Usuario?> GetByIdAsync(int id)
         {
             var usuario = await _usuarioRepository.GetByIdAsync(id);
@@ -214,31 +196,33 @@ namespace bookme_backend.BLL.Services
             _usuarioRepository.Update(usuario);
         }
 
-        public async Task<(bool Success, string Message)> DeleteAsync(string id)
+        public async Task<(bool Success, string Message)> DeleteAsync(string email)
         {
-            // Buscar al usuario por ID
-            var user = await _userManager.FindByIdAsync(id.ToString());
-            if (user == null)
+            var usuario = await _userManager.FindByEmailAsync(email);
+
+            if (usuario == null)
             {
                 return (false, "Usuario no encontrado.");
             }
 
-            // Intentar eliminar al usuario
-            var result = await _userManager.DeleteAsync(user);
-            if (!result.Succeeded)
+            var resultado = await _userManager.DeleteAsync(usuario);
+
+            if (resultado.Succeeded)
             {
-                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                return (false, $"Error al eliminar el usuario: {errors}");
+                return (true, "Usuario eliminado correctamente.");
             }
 
-            return (true, "Usuario eliminado correctamente.");
+            var errores = string.Join("; ", resultado.Errors.Select(e => e.Description));
+            return (false, $"Error al eliminar el usuario: {errores}");
         }
+
+
 
 
         //Devuelve la misma respuesta que el login
         public async Task<LoginResultDTO> RegisterAsync(RegisterDTO model)
         {
-            var existingUser = await _userManager.FindByEmailAsync(model.Email);
+            var existingUser = await _userManager.FindByEmailAsync(model.Email.ToUpperInvariant());
             if (existingUser != null)
                 throw new Exception("El correo electrónico ya está registrado");
 
