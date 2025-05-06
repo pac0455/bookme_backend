@@ -120,16 +120,16 @@ namespace bookme_backend.UI.Controllers
                 var (success, message) = await _usuarioService.DeleteAsync(id);
                 if (!success)
                 {
-                    return BadRequest(message);
+                    return BadRequest(new {message});
 
                 }
 
-                return Ok(message);
+                return Ok(new { message });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al eliminar el usuario");
-                return StatusCode(500, "Error interno del servidor.");
+                _logger.LogError(ex, "Error al eliminar el usuario" );
+                return StatusCode(500, new { message = "Error al eliminar el usuario" });
             }
         }
 
