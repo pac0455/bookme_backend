@@ -63,7 +63,6 @@ namespace bookme_backend.UI.Controllers
             try
             {
                 var result = await _usuarioService.Login(model.Email, model.Password);
-       
                 return Ok(result);
             }catch(Exception ex)
             {
@@ -112,12 +111,12 @@ namespace bookme_backend.UI.Controllers
             }
         }
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteUser(string id)
+        [HttpDelete]
+        public async Task<IActionResult> DeleteUser([FromQuery]string email)
         {
             try
             {
-                var (success, message) = await _usuarioService.DeleteAsync(id);
+                var (success, message) = await _usuarioService.DeleteAsync(email);
                 if (!success)
                 {
                     return BadRequest(new {message});
@@ -132,7 +131,5 @@ namespace bookme_backend.UI.Controllers
                 return StatusCode(500, new { message = "Error al eliminar el usuario" });
             }
         }
-
-
     }
 }

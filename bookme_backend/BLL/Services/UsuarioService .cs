@@ -198,7 +198,7 @@ namespace bookme_backend.BLL.Services
 
         public async Task<(bool Success, string Message)> DeleteAsync(string email)
         {
-            var usuario = await _userManager.FindByEmailAsync(email);
+            var usuario = await _userManager.FindByEmailAsync(email.ToUpperInvariant());
 
             if (usuario == null)
             {
