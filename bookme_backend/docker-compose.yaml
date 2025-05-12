@@ -8,12 +8,13 @@ services:
       - "1433:1433"
     volumes:
       - sqlvolume:/var/opt/mssql
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "1433"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s  
+    # healthcheck:
+    #     test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P S3cur3P@ss2024! -Q "SELECT 1"
+    #     interval: 30s
+    #     timeout: 10s
+    #     retries: 5
+    #     start_period: 30s
+  
   backend:
     build:
       dockerfile: Dockerfile
@@ -26,12 +27,12 @@ services:
       - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=Bookme;User=sa;Password=S3cur3P@ss2024!;TrustServerCertificate=True
     ports:
       - "5000:80"
-    healthcheck:
-      test: ["CMD", "dotnet", "bookme_backend.dll", "--help"]
-      interval: 30s
-      retries: 3
-      start_period: 5s
-      timeout: 10s
+    # healthcheck:
+    #   test: ["CMD", "dotnet", "bookme_backend.dll", "--help"]
+    #   interval: 30s
+    #   retries: 3
+    #   start_period: 5s
+    #   timeout: 10s
 
 volumes:
   sqlvolume:

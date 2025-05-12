@@ -8,6 +8,7 @@ using bookme_backend.UI.Controllers;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
+using System.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -24,6 +25,7 @@ namespace bookme_backend.BLL.Services
         private readonly UserManager<Usuario> _userManager;
         private readonly ICustomEmailSender _emailSender;
         private readonly ILogger<UsuarioService> _logger;
+        private readonly RoleManager<IdentityRole> _roleManager;
 
         public UsuarioService(
             IUsuarioRepository usuarioRepository,
@@ -31,7 +33,8 @@ namespace bookme_backend.BLL.Services
             IConfiguration configuration,
             UserManager<Usuario> userManager,
             ICustomEmailSender emailSender,
-            ILogger<UsuarioService> logger)
+            ILogger<UsuarioService> logger,
+            RoleManager<IdentityRole> roleManager)
         {
             _usuarioRepository = usuarioRepository;
             _passwordHelper = passwordHelper;
@@ -39,6 +42,7 @@ namespace bookme_backend.BLL.Services
             _userManager = userManager;
             _emailSender = emailSender;
             _logger = logger;
+            _roleManager = roleManager;
         }
         public async Task<Usuario?> GetByEmailAsync(string email)
         {
@@ -237,14 +241,24 @@ namespace bookme_backend.BLL.Services
             if (!result.Succeeded)
                 throw new Exception(string.Join("; ", result.Errors.Select(e => e.Description)));
 
+
+            // Determinar el rol
+            var rol = model.IsNegocio ? ERol.Negocio.ToString() : ERol.Cliente.ToString();
+            if (string.IsNullOrWhiteSpace(rol))
+                throw new InvalidOperationException("El rol no puede ser nulo o vacío.");
+            // Crear el rol si no existe
+            if (!await _roleManager.RoleExistsAsync(rol))
+                await _roleManager.CreateAsync(new IdentityRole(rol));
+
             var token = GenerateJwtToken(user);
+            var roles = await _userManager.GetRolesAsync(user);
 
             return new LoginResultDTO
             {
                 Usuario = user,
-                Token = token
+                Token = token,
+                Roles = roles
             };
         }
-
     }
 }

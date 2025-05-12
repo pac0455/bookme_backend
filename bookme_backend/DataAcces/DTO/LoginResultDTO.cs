@@ -6,6 +6,8 @@ namespace bookme_backend.DataAcces.DTO
     {
         public string Token { get; set; } = null!;
         public Usuario Usuario { get; set; } = null!;
+        public IList<string> Roles { get; set; } = new List<string>();
+
     }
 
 }
