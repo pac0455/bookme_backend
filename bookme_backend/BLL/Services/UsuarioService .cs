@@ -50,24 +50,28 @@ namespace bookme_backend.BLL.Services
         }
         public async Task<LoginResultDTO> Login(string email, string password)
         {
-            // 1. Buscar el usuario
-            var user = await _usuarioRepository.GetByEmailAsync(email);
+            // 1. Buscar el usuario desde Identity (no desde tu repositorio personalizado)
+            var user = await _userManager.FindByEmailAsync(email);
             if (user == null)
                 throw new KeyNotFoundException("Usuario no encontrado.");
 
-            // 2. Verificar contraseña
-            var isPasswordValid = _passwordHelper.VerifyPassword(user, user.PasswordHash, password);
+            // 2. Verificar la contraseña con UserManager (recomendado)
+            var isPasswordValid = await _userManager.CheckPasswordAsync(user, password);
             if (!isPasswordValid)
                 throw new UnauthorizedAccessException("Contraseña incorrecta.");
 
-            // 3. Generar el token
-            var token = GenerateJwtToken(user); // Asegúrate de tener este método implementado
+            // 3. Obtener los roles correctamente
+            var roles = await _userManager.GetRolesAsync(user);
 
-            // 4. Devolver usuario + token
+            // 4. Generar el token
+            var token = GenerateJwtToken(user);
+
+            // 5. Devolver DTO
             return new LoginResultDTO
             {
                 Usuario = user,
-                Token = token
+                Token = token,
+                Roles = roles
             };
         }
 
@@ -243,15 +247,18 @@ namespace bookme_backend.BLL.Services
 
 
             // Determinar el rol
-            var rol = model.IsNegocio ? ERol.Negocio.ToString() : ERol.Cliente.ToString();
+            var rol = model.IsNegocio ? ERol.NEGOCIO.ToString() : ERol.CLIENTE.ToString();
+
             if (string.IsNullOrWhiteSpace(rol))
                 throw new InvalidOperationException("El rol no puede ser nulo o vacío.");
             // Crear el rol si no existe
             if (!await _roleManager.RoleExistsAsync(rol))
                 await _roleManager.CreateAsync(new IdentityRole(rol));
 
-            var token = GenerateJwtToken(user);
+            await _userManager.AddToRoleAsync(user, rol);
             var roles = await _userManager.GetRolesAsync(user);
+            var token = GenerateJwtToken(user);
+
 
             return new LoginResultDTO
             {
