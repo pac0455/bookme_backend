@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using bookme_backend.DataAcces.Models;
 
 namespace bookme_backend.DataAcces.Models;
 
@@ -61,6 +62,8 @@ public partial class BookmeContext : IdentityDbContext<Usuario>
             .HasForeignKey(rs => rs.ServicioId)
             .OnDelete(DeleteBehavior.Restrict); // También evita conflicto
     }
+
+public DbSet<bookme_backend.DataAcces.Models.Horarios> Horarios { get; set; } = default!;
 
 
 }

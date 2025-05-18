@@ -1,15 +1,16 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using bookme_backend.DataAcces.Repositories.Interfaces;
 using System.Linq.Expressions;
+using bookme_backend.DataAcces.Models;
 
 namespace bookme_backend.DataAcces.Repositories.Implementation
 {
     public class Repository<T> : IRepository<T> where T : class
     {
-        protected readonly DbContext _context;
+        protected readonly BookmeContext _context;
         protected readonly DbSet<T> _dbSet;
 
-        public Repository(DbContext context)
+        public Repository(BookmeContext context)
         {
             _context = context;
             _dbSet = context.Set<T>();
