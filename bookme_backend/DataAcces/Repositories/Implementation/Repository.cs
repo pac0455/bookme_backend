@@ -18,9 +18,8 @@ namespace bookme_backend.DataAcces.Repositories.Implementation
         public virtual async Task<bool> Exist(Expression<Func<T, bool>> predicate)
         {
             return await _dbSet.AnyAsync(predicate);
-        }
-
-        public virtual async Task<List<T>> GetAllAsync()
+        } 
+        public virtual async Task<List<T>> GetAllAsync() 
         {
             return await _dbSet.ToListAsync();
         }
