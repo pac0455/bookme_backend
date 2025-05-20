@@ -1,12 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 
 namespace bookme_backend.DataAcces.Models;
 
 [Table("negocios")]
+[Index(nameof(Nombre), IsUnique = true)]
 public partial class Negocio
 {
     [Key]
@@ -14,24 +14,24 @@ public partial class Negocio
     public int Id { get; set; }
 
     [Column("nombre")]
-    [StringLength(255)]
+    [StringLength(255), Required]
     public string? Nombre { get; set; }
 
-    [Column("descripcion")]
+    [Column("descripcion"), Required]
     [StringLength(255)]
     public string? Descripcion { get; set; }
 
     [Column("direccion")]
-    [StringLength(255)]
+    [StringLength(255), Required]
     public string? Direccion { get; set; }
 
-    [Column("latitud")]
+    [Column("latitud"), Required]
     public double? Latitud { get; set; }
 
-    [Column("longitud")]
+    [Column("longitud"), Required]
     public double? Longitud { get; set; }
 
-    [Column("categoria")]
+    [Column("categoria"), Required]
     [StringLength(255)]
     public string? Categoria { get; set; }
 
@@ -40,13 +40,13 @@ public partial class Negocio
 
     [Column("activo")]
     public bool? Activo { get; set; }
-
+    [JsonIgnore]
     [InverseProperty("Negocio")]
     public virtual ICollection<Reserva> Reservas { get; set; } = new List<Reserva>();
-
+    [JsonIgnore]
     [InverseProperty("Negocio")]
     public virtual ICollection<Servicio> Servicios { get; set; } = new List<Servicio>();
-
+    [JsonIgnore]
     [InverseProperty("IdNegocioNavigation")]
     public virtual ICollection<Suscripcione> Suscripciones { get; set; } = new List<Suscripcione>();
 }
