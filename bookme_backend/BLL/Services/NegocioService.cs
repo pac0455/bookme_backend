@@ -4,24 +4,35 @@ using bookme_backend.DataAcces.Repositories.Interfaces;
 
 namespace bookme_backend.BLL.Services
 {
-    public class NegocioService : INegocioService
+    public class NegocioService(
+        IRepository<Horarios> horarioRepository,
+        IRepository<Negocio> negocioRepo,
+        IRepository<Suscripcione> subcripcionesRepo
+        ) : INegocioService
     {
-        private readonly IRepository<Horarios> _horarioRepo;
-        private readonly IRepository<Negocio> _negocioRepo;
 
-        public NegocioService(IRepository<Horarios> horarioRepository, IRepository<Negocio> negocioRepo)
-        {
-            _horarioRepo = horarioRepository;
-            _negocioRepo = negocioRepo;
-        }
+        private readonly IRepository<Negocio> _negocioRepo = negocioRepo;
+        private readonly IRepository<Suscripcione> _subcripcionesRepo = subcripcionesRepo;
 
-        public async Task<(bool Success, string Message)> AddAsync(Negocio negocios)
+
+        //Crea un negocio y lo relaciona con el usuario mediante una subcripción
+        public async Task<(bool Success, string Message)> AddAsync(Negocio negocio)
         {
             try
             {
-                await _negocioRepo.AddAsync(negocios);
+                await _negocioRepo.AddAsync(negocio);
                 // Si todos los negocios son válidos, agregamos
+
+                var subcripcion = new Suscripcione
+                {
+                    FechaSuscripcion = DateTime.Now,
+                    IdNegocio = negocio.Id,
+                    RolNegocio = ERol.NEGOCIO.ToString(),
+                };
+                await _subcripcionesRepo.AddAsync(subcripcion);
                 await _negocioRepo.SaveChangesAsync();
+                await _subcripcionesRepo.SaveChangesAsync();
+
                 return (true, "Negocio añadido correctamente.");
             }
             catch (Exception ex)

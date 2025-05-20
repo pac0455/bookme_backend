@@ -10,4 +10,3 @@ namespace bookme_backend.DataAcces.Models
         ADMIN
     }
 }
-//RESOURCE: https://stackoverflow.com/questions/630803/associating-enums-with-strings-in-c-sharp
