@@ -64,7 +64,7 @@ namespace bookme_backend.BLL.Services
             var roles = await _userManager.GetRolesAsync(user);
 
             // 4. Generar el token
-            var token = GenerateJwtToken(user);
+            var token = await GenerateJwtToken(user);
 
             // 5. Devolver DTO
             return new LoginResultDTO
@@ -75,13 +75,21 @@ namespace bookme_backend.BLL.Services
             };
         }
 
-        private string GenerateJwtToken(Usuario user)
+        private async Task<string> GenerateJwtToken(Usuario user)
         {
+            var roles = await _userManager.GetRolesAsync(user);
+
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id),
                 new Claim(ClaimTypes.Email, user.Email)
             };
+
+            // Agrega cada rol como ClaimTypes.Role
+            foreach (var role in roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -96,6 +104,7 @@ namespace bookme_backend.BLL.Services
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+
         public async Task<(bool Success, string Message)> ResendConfirmationEmailAsync(string email)
         {
             var user = await _userManager.FindByEmailAsync(email);
@@ -257,7 +266,7 @@ namespace bookme_backend.BLL.Services
 
             await _userManager.AddToRoleAsync(user, rol);
             var roles = await _userManager.GetRolesAsync(user);
-            var token = GenerateJwtToken(user);
+            var token = await GenerateJwtToken(user);
 
 
             return new LoginResultDTO

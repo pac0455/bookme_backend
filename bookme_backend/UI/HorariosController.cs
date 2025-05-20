@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using bookme_backend.DataAcces.Models;
 using bookme_backend.DataAcces.Repositories.Interfaces;
 using bookme_backend.BLL.Services;
+using bookme_backend.BLL.Interfaces;
 
 namespace bookme_backend.UI
 {
@@ -16,26 +17,28 @@ namespace bookme_backend.UI
     public class HorariosController : ControllerBase
     {
         private readonly BookmeContext _context;
-        private readonly HorarioService _horarioService;
+        private readonly IHorarioService _horarioService;
+        private readonly IRepository<Horario> _horarioRepository;
 
-        public HorariosController(BookmeContext context, IRepository<Horarios> repository)
+        public HorariosController(BookmeContext context, IHorarioService horarioService, IRepository<Horario> horarioRepository)
         {
             _context = context;
-            _repository = repository;
+            _horarioService = horarioService;
+            _horarioRepository = horarioRepository;
         }
 
 
 
         // GET: api/Horarios
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Horarios>>> GetHorarios()
+        public async Task<ActionResult<IEnumerable<Horario>>> GetHorarios()
         {
-            return await _repository.GetAllAsync();
+            return await _horarioRepository.GetAllAsync();
         }
 
         // GET: api/Horarios/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Horarios>> GetHorarios(int id)
+        public async Task<ActionResult<Horario>> GetHorarios(int id)
         {
             var horarios = await _context.Horarios.FindAsync(id);
 
@@ -50,7 +53,7 @@ namespace bookme_backend.UI
         // PUT: api/Horarios/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutHorarios(int id, Horarios horarios)
+        public async Task<IActionResult> PutHorarios(int id, Horario horarios)
         {
             if (id != horarios.Id)
             {
@@ -81,7 +84,7 @@ namespace bookme_backend.UI
         // POST: api/Horarios
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Horarios>> PostHorarios(Horarios horarios)
+        public async Task<ActionResult<Horario>> PostHorarios(Horario horarios)
         {
             _context.Horarios.Add(horarios);
             await _context.SaveChangesAsync();
@@ -90,7 +93,7 @@ namespace bookme_backend.UI
         }
 
         [HttpPost("/range")]
-        public async Task<ActionResult<List<Horarios>>> PostRangeHorarios(List<Horarios> horarios)
+        public async Task<ActionResult<List<Horario>>> PostRangeHorarios(List<Horario> horarios)
         {
             try
             {

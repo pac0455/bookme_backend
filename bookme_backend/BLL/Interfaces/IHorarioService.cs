@@ -4,6 +4,6 @@ namespace bookme_backend.BLL.Interfaces
 {
     public interface IHorarioService
     {
-        Task<(bool Success, string Message)> AddRangeAsync(List<Horarios> horarios);
+        Task<(bool Success, string Message)> AddRangeAsync(List<Horario> horarios);
     }
 }

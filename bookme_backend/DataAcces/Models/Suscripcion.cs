@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace bookme_backend.DataAcces.Models;
 
 [Table("suscripciones")]
-public partial class Suscripcione
+public partial class Suscripcion
 {
     [Key]
     [Column("id")]

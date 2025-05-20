@@ -20,7 +20,7 @@ public partial class Usuario:  IdentityUser
     public virtual ICollection<Reserva> Reservas { get; set; } = new List<Reserva>();
 
     [InverseProperty("IdUsuarioNavigation")]
-    public virtual ICollection<Suscripcione> Suscripciones { get; set; } = new List<Suscripcione>();
+    public virtual ICollection<Suscripcion> Suscripciones { get; set; } = new List<Suscripcion>();
 
     [InverseProperty("Usuario")]
     public virtual ICollection<Valoracione> Valoraciones { get; set; } = new List<Valoracione>();

@@ -4,6 +4,7 @@ using MimeKit;
 
 using bookme_backend.DataAcces.Models;
 using MailKit.Security;
+using Microsoft.AspNetCore.Identity.UI.Services;
 
 namespace bookme_backend.BLL.Services
 {
@@ -25,9 +26,6 @@ namespace bookme_backend.BLL.Services
 
 
                 _logger.LogInformation($"Simulación de email para {email}: {subject}\n{htmlMessage}");
-
-
-
                 // Configuración del mensaje
                 var message = new MimeMessage();
                 message.From.Add(new MailboxAddress(

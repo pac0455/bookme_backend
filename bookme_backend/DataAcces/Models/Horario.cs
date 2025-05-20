@@ -5,11 +5,13 @@ using System.Text.Json.Serialization;
 namespace bookme_backend.DataAcces.Models
 {
     [Table("horarios")]
-    public class Horarios
+    public class Horario
     {
         [Key]
         [Column]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
+
         [Column("id_negocio")]
         public int IdNegocio { get; set; }
 
@@ -26,6 +28,7 @@ namespace bookme_backend.DataAcces.Models
         [ForeignKey(nameof(IdNegocio))]
         [JsonIgnore]
         [InverseProperty("HorariosAtencion")]
-        public virtual Negocio Negocio { get; set; } = null!;
+        public virtual Negocio? Negocio { get; set; }
     }
+
 }

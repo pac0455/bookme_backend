@@ -26,7 +26,7 @@ public partial class BookmeContext : IdentityDbContext<Usuario>
 
     public virtual DbSet<Servicio> Servicios { get; set; }
 
-    public virtual DbSet<Suscripcione> Suscripciones { get; set; }
+    public virtual DbSet<Suscripcion> Suscripciones { get; set; }
 
     public virtual DbSet<Usuario> Usuarios { get; set; }
 
@@ -41,7 +41,7 @@ public partial class BookmeContext : IdentityDbContext<Usuario>
             .HasOne(v => v.Reserva)
             .WithMany(r => r.Valoraciones)
             .HasForeignKey(v => v.ReservaId)
-            .OnDelete(DeleteBehavior.Restrict); // ⚠️ EVITA el error DE MULTIPLES CASCADE APUNTANDO A UNA TABLA
+            .OnDelete(DeleteBehavior.Restrict); //  EVITA el error DE MULTIPLES CASCADE APUNTANDO A UNA TABLA
 
         modelBuilder.Entity<Valoracione>()
             .HasOne(v => v.Usuario)
@@ -53,7 +53,7 @@ public partial class BookmeContext : IdentityDbContext<Usuario>
        .HasOne(rs => rs.Reserva)
        .WithMany(r => r.ReservasServicios)
        .HasForeignKey(rs => rs.ReservaId)
-       .OnDelete(DeleteBehavior.Cascade); // ✅
+       .OnDelete(DeleteBehavior.Cascade); // 
 
         //ESTO SE RESOLVERA CON TRIGGER
         modelBuilder.Entity<ReservasServicio>()
@@ -63,7 +63,7 @@ public partial class BookmeContext : IdentityDbContext<Usuario>
             .OnDelete(DeleteBehavior.Restrict); // También evita conflicto
     }
 
-public DbSet<bookme_backend.DataAcces.Models.Horarios> Horarios { get; set; } = default!;
+public DbSet<bookme_backend.DataAcces.Models.Horario> Horarios { get; set; } = default!;
 
 
 }

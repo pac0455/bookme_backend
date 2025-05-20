@@ -7,17 +7,17 @@ namespace bookme_backend.BLL.Services
 {
     public class HorarioService : IHorarioService
     {
-        private readonly IRepository<Horarios> _horarioRepo;
+        private readonly IRepository<Horario> _horarioRepo;
         private readonly IRepository<Negocio> _negocioRepo;
 
-        public HorarioService(IRepository<Horarios> horarioRepository, IRepository<Negocio> negocioRepo)
+        public HorarioService(IRepository<Horario> horarioRepository, IRepository<Negocio> negocioRepo)
         {
             _horarioRepo = horarioRepository;
             _negocioRepo = negocioRepo;
         }
 
 
-        public async Task<(bool Success, string Message)> AddRangeAsync(List<Horarios> horarios)
+        public async Task<(bool Success, string Message)> AddRangeAsync(List<Horario> horarios)
         {
             try
             {

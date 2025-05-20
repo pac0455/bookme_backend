@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Security.Claims;
+using System.Text;
 using bookme_backend;
 using bookme_backend.BLL.Interfaces;
 using bookme_backend.BLL.Services;
@@ -10,10 +11,8 @@ using Google;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.General;
 
 namespace bookme_backend
 {
@@ -24,8 +23,7 @@ namespace bookme_backend
             var builder = WebApplication.CreateBuilder(args);
 
             // JWT Authentication
-            // JWT Authentication
-            _ = builder.Services.AddAuthentication(options =>
+            builder.Services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -40,7 +38,10 @@ namespace bookme_backend
                     ValidateIssuerSigningKey = true,
                     ValidIssuer = builder.Configuration["Jwt:Issuer"],
                     ValidAudience = builder.Configuration["Jwt:Audience"],
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
+
+                    RoleClaimType = ClaimTypes.Role,
+                    NameClaimType = ClaimTypes.NameIdentifier
                 };
             });
 
@@ -53,7 +54,7 @@ namespace bookme_backend
             builder.Services.AddDbContext<BookmeContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
             // Add services to the container.
-            builder.Services.AddControllers();
+            builder.Services.AddControllers(options => options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes=true);
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(c =>
@@ -84,50 +85,53 @@ namespace bookme_backend
                         new string[] {}
                     }
                 });
+
             });
 
 
             // Registrar servicios
             builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-            //Usuario
+           
+
             builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
             builder.Services.AddScoped<IUsuarioService, UsuarioService>();
-            // Horarios
-            builder.Services.AddScoped<IHorarioRepository, HorarioRepository>();
+            builder.Services.AddScoped<IHorarioService, HorarioService>();
+
+            builder.Services.AddScoped<INegocioService, NegocioService>();
+            builder.Services.AddScoped<ICustomEmailSender, EmailSender>();
+
+
+
+
+            builder.Logging.AddDebug();
+            builder.Logging.AddConsole();
+
+
+
 
 
             // Registra primero la implementación concreta como Singleton
-            builder.Services.AddScoped<ICustomEmailSender, EmailSender>();
+
 
 
 
             //Hasher
             builder.Services.AddScoped<IPasswordHelper, PasswordHelper>();
             //IDENTITY USER
-            builder.Services.AddIdentity<Usuario, IdentityRole>(options =>
+            builder.Services.AddIdentityCore<Usuario>(options =>
             {
-                // Configura las políticas de contraseñas
-                options.Password.RequireDigit = true; // Requiere al menos un dígito
-                options.Password.RequireLowercase = true; // Requiere al menos una minúscula
-                options.Password.RequireUppercase = true; // Requiere al menos una mayúscula
-                options.Password.RequireNonAlphanumeric = false; // Requiere un carácter no alfanumérico
-                options.Password.RequiredLength = 6; // Longitud mínima de la contraseña
-                options.Password.RequiredUniqueChars = 0; // Número de caracteres únicos requeridos
-
-                // Política de bloqueo de cuenta
-                options.Lockout.AllowedForNewUsers = true;
-                options.Lockout.MaxFailedAccessAttempts = 5; // Máximo de intentos fallidos
-                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15); // Tiempo de bloqueo
-                options.Lockout.MaxFailedAccessAttempts = 5; // Número de intentos fallidos antes de bloquear la cuenta
-
-                // Política de confirmación de correo electrónico
-                options.User.RequireUniqueEmail = true; // Requiere que el correo electrónico sea único
-                options.SignIn.RequireConfirmedAccount = false; // Importante para recuperación
-
+                options.Password.RequireDigit = true;
+                options.Password.RequireLowercase = true;
+                options.Password.RequireUppercase = true;
+                options.Password.RequireNonAlphanumeric = false;
+                options.Password.RequiredLength = 6;
+                options.User.RequireUniqueEmail = true;
             })
-            .AddErrorDescriber<IdentityErrorDescriberEs>() // 👈 Aquí cambiamos el idioma
+            .AddRoles<IdentityRole>()
+            .AddErrorDescriber<IdentityErrorDescriberEs>()
             .AddEntityFrameworkStores<BookmeContext>()
             .AddDefaultTokenProviders();
+
 
 
 
@@ -148,7 +152,7 @@ namespace bookme_backend
             app.UseAuthorization();
 
             app.MapControllers();
-            //app.MapIdentityApi<Usuario>();  // Debe ir después de UseRouting
+//app.MapIdentityApi<Usuario>();  // Debe ir después de UseRouting
 
             app.Run();
 

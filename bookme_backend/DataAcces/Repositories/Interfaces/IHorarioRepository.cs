@@ -2,8 +2,8 @@
 
 namespace bookme_backend.DataAcces.Repositories.Interfaces
 {
-    public interface IHorarioRepository: IRepository<Horarios>
+    public interface IHorarioRepository: IRepository<Horario>
     {
-        Task<bool> AddAllAsync(List<Horarios>);
+        Task<bool> AddAllAsync(List<Horario> horarios);
     }
 }
