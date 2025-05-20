@@ -6,16 +6,18 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using bookme_backend.DataAcces.Models;
+using bookme_backend.BLL.Services;
 
 namespace bookme_backend.UI
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class NegociosController : ControllerBase
+    public class NegocioController : ControllerBase
     {
         private readonly BookmeContext _context;
+        private readonly NegocioService _negocioService;
 
-        public NegociosController(BookmeContext context)
+        public NegocioController(BookmeContext context)
         {
             _context = context;
         }
@@ -77,10 +79,15 @@ namespace bookme_backend.UI
         [HttpPost]
         public async Task<ActionResult<Negocio>> PostNegocio(Negocio negocio)
         {
-            _context.Negocios.Add(negocio);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetNegocio", new { id = negocio.Id }, negocio);
+            try
+            {
+                var (succes, message) =await _negocioService.AddAsync(negocio);
+                if(!succes )  return BadRequest(message);
+                return CreatedAtAction("GetNegocio", new { id = negocio.Id }, negocio);
+            }
+            catch (Exception ex) {
+                return BadRequest(ex.Message);
+            }            
         }
 
         // DELETE: api/Negocios/5

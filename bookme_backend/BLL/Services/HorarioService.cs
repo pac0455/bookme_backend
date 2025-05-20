@@ -1,6 +1,7 @@
 ﻿using bookme_backend.BLL.Interfaces;
 using bookme_backend.DataAcces.Models;
 using bookme_backend.DataAcces.Repositories.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace bookme_backend.BLL.Services
 {
@@ -16,16 +17,29 @@ namespace bookme_backend.BLL.Services
         }
 
 
-        public Task<Horarios> AddAsync(Horarios horario)
+        public async Task<(bool Success, string Message)> AddRangeAsync(List<Horarios> horarios)
         {
-
-            var negocio = _negocioRepo.GetByIdAsync(horario.IdNegocio);
-            //Comprobar si el negocio existe
-            if (negocio is not null)
+            try
             {
+                // Validar que todos los negocios existen
+                foreach (var horario in horarios)
+                {
+                    var negocio = await _negocioRepo.GetByIdAsync(horario.IdNegocio);
+                    if (negocio == null)
+                    {
+                        return (false, $"Negocio con ID {horario.IdNegocio} no existe.");
+                    }
+                }
 
+                // Si todos los negocios son válidos, agregamos
+                await _horarioRepo.AddRangeAsync(horarios);
+                await _horarioRepo.SaveChangesAsync();
+                return (true, "Horarios añadidos correctamente.");
             }
-            throw new NotImplementedException();
+            catch (Exception ex)
+            {
+                return (false, $"Error al insertar horarios: {ex.Message}");
+            }
         }
     }
 

@@ -39,9 +39,6 @@ public partial class Negocio
 
     [InverseProperty("Negocio")]
     public virtual ICollection<Horarios> HorariosAtencion { get; set; } = new List<Horarios>();
-
-    [Column("activo")]
-    public bool? Activo { get; set; }
     [JsonIgnore]
     [InverseProperty("Negocio")]
     public virtual ICollection<Reserva> Reservas { get; set; } = new List<Reserva>();

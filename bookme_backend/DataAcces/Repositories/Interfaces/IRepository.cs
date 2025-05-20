@@ -7,9 +7,11 @@ namespace bookme_backend.DataAcces.Repositories.Interfaces
         Task<T?> GetByIdAsync(int id);
         Task<List<T>> GetAllAsync();
         Task AddAsync(T entity);
+        Task AddRangeAsync(IEnumerable<T> entities);
         Task DeleteAsync(T entity);
         void Update(T entity);
         Task<bool> Exist(Expression<Func<T, bool>> predicate);
+        Task SaveChangesAsync();
     }
 
 }

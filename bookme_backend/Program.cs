@@ -93,6 +93,7 @@ namespace bookme_backend
             builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
             builder.Services.AddScoped<IUsuarioService, UsuarioService>();
             // Horarios
+            builder.Services.AddScoped<IHorarioRepository, HorarioRepository>();
 
 
             // Registra primero la implementación concreta como Singleton

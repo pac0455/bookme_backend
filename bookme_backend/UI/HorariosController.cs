@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using bookme_backend.DataAcces.Models;
 using bookme_backend.DataAcces.Repositories.Interfaces;
+using bookme_backend.BLL.Services;
 
 namespace bookme_backend.UI
 {
@@ -15,7 +16,7 @@ namespace bookme_backend.UI
     public class HorariosController : ControllerBase
     {
         private readonly BookmeContext _context;
-        private readonly IRepository<Horarios> _repository;
+        private readonly HorarioService _horarioService;
 
         public HorariosController(BookmeContext context, IRepository<Horarios> repository)
         {
@@ -86,6 +87,21 @@ namespace bookme_backend.UI
             await _context.SaveChangesAsync();
 
             return CreatedAtAction("GetHorarios", new { id = horarios.Id }, horarios);
+        }
+
+        [HttpPost("/range")]
+        public async Task<ActionResult<List<Horarios>>> PostRangeHorarios(List<Horarios> horarios)
+        {
+            try
+            {
+                var (succes, message) = await _horarioService.AddRangeAsync(horarios);
+                if(!succes) return BadRequest(message);
+                return Ok(horarios);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
         }
 
         // DELETE: api/Horarios/5
