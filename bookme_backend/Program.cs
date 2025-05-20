@@ -92,7 +92,8 @@ namespace bookme_backend
             //Usuario
             builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
             builder.Services.AddScoped<IUsuarioService, UsuarioService>();
-            // Debe estar ANTES de builder.Build()
+            // Horarios
+
 
             // Registra primero la implementación concreta como Singleton
             builder.Services.AddScoped<ICustomEmailSender, EmailSender>();

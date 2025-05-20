@@ -34,6 +34,8 @@ public partial class Negocio
     [Column("categoria"), Required]
     [StringLength(255)]
     public string? Categoria { get; set; }
+    [Column("activo")]
+    public bool? Activo { get; set; }
 
     [InverseProperty("Negocio")]
     public virtual ICollection<Horarios> HorariosAtencion { get; set; } = new List<Horarios>();

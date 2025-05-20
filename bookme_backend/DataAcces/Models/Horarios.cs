@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace bookme_backend.DataAcces.Models
 {
@@ -23,6 +24,7 @@ namespace bookme_backend.DataAcces.Models
         public TimeSpan HoraFin { get; set; }
 
         [ForeignKey(nameof(IdNegocio))]
+        [JsonIgnore]
         [InverseProperty("HorariosAtencion")]
         public virtual Negocio Negocio { get; set; } = null!;
     }
