@@ -61,9 +61,17 @@ public partial class BookmeContext : IdentityDbContext<Usuario>
             .WithMany(s => s.ReservasServicios)
             .HasForeignKey(rs => rs.ServicioId)
             .OnDelete(DeleteBehavior.Restrict); // También evita conflicto
+
+        //Cuando se elimine un Negocio, elimina también sus HorariosAtencion asociados
+        modelBuilder.Entity<Horario>()
+            .HasOne(h => h.Negocio)
+            .WithMany(n => n.HorariosAtencion)
+            .HasForeignKey(h => h.IdNegocio)
+            .OnDelete(DeleteBehavior.Cascade);
+
     }
 
-public DbSet<bookme_backend.DataAcces.Models.Horario> Horarios { get; set; } = default!;
+    public DbSet<bookme_backend.DataAcces.Models.Horario> Horarios { get; set; } = default!;
 
 
 }

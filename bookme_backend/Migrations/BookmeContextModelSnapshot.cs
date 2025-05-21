@@ -155,7 +155,7 @@ namespace bookme_backend.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("bookme_backend.DataAcces.Models.Horarios", b =>
+            modelBuilder.Entity("bookme_backend.DataAcces.Models.Horario", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -186,6 +186,8 @@ namespace bookme_backend.Migrations
                     b.HasIndex("IdNegocio");
 
                     b.ToTable("horarios");
+
+                    b.HasAnnotation("Relational:JsonPropertyName", "horarioAtencion");
                 });
 
             modelBuilder.Entity("bookme_backend.DataAcces.Models.Negocio", b =>
@@ -422,7 +424,7 @@ namespace bookme_backend.Migrations
                     b.ToTable("servicios");
                 });
 
-            modelBuilder.Entity("bookme_backend.DataAcces.Models.Suscripcione", b =>
+            modelBuilder.Entity("bookme_backend.DataAcces.Models.Suscripcion", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -626,7 +628,7 @@ namespace bookme_backend.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("bookme_backend.DataAcces.Models.Horarios", b =>
+            modelBuilder.Entity("bookme_backend.DataAcces.Models.Horario", b =>
                 {
                     b.HasOne("bookme_backend.DataAcces.Models.Negocio", "Negocio")
                         .WithMany("HorariosAtencion")
@@ -697,7 +699,7 @@ namespace bookme_backend.Migrations
                     b.Navigation("Negocio");
                 });
 
-            modelBuilder.Entity("bookme_backend.DataAcces.Models.Suscripcione", b =>
+            modelBuilder.Entity("bookme_backend.DataAcces.Models.Suscripcion", b =>
                 {
                     b.HasOne("bookme_backend.DataAcces.Models.Negocio", "IdNegocioNavigation")
                         .WithMany("Suscripciones")

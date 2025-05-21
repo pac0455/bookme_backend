@@ -12,6 +12,11 @@ namespace bookme_backend.DataAcces.Repositories.Interfaces
         void Update(T entity);
         Task<bool> Exist(Expression<Func<T, bool>> predicate);
         Task SaveChangesAsync();
+        Task<List<T>> GetWhereAsync(Expression<Func<T, bool>> predicate);
+
+        Task<List<T>> GetWhereWithIncludesAsync( Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes);
+
+
     }
 
 }

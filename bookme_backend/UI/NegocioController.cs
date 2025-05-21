@@ -5,6 +5,7 @@ using bookme_backend.DataAcces.Models;
 using bookme_backend.BLL.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+using bookme_backend.DataAcces.Repositories.Interfaces;
 
 namespace bookme_backend.UI
 {
@@ -15,12 +16,13 @@ namespace bookme_backend.UI
         private readonly BookmeContext _context;
         private readonly ILogger<NegocioController> _logger;
         private readonly INegocioService _negocioService;
-
-        public NegocioController(BookmeContext context, INegocioService negocioService, ILogger<NegocioController> logger)
+        private readonly IRepository<Negocio> _repository;
+        public NegocioController(BookmeContext context, INegocioService negocioService, ILogger<NegocioController> logger, IRepository<Negocio> repository)
         {
             _context = context;
             _negocioService = negocioService;
             _logger = logger;
+            _repository = repository;
         }
         [Authorize(Roles = "NEGOCIO")]
         // GET: api/Negocio
@@ -30,11 +32,12 @@ namespace bookme_backend.UI
             return await _context.Negocios.Include(x => x.HorariosAtencion).ToListAsync();
         }
         [Authorize(Roles = "NEGOCIO")]
-        // GET: api/Negocio/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Negocio>> GetNegocio(int id)
         {
-            var negocio = await _context.Negocios.FindAsync(id);
+            var negocio = await _context.Negocios
+                .Include(n => n.HorariosAtencion)
+                .FirstOrDefaultAsync(n => n.Id == id);
 
             if (negocio == null)
             {
@@ -43,40 +46,74 @@ namespace bookme_backend.UI
 
             return negocio;
         }
+
         [Authorize(Roles = "NEGOCIO")]
-        // PUT: api/Negocios/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        [HttpGet("ByUserId")]
+        public async Task<ActionResult<IEnumerable<Negocio>>> GetNegiciosByUserID()
+        {
+            try
+            {
+                _logger.LogInformation("Entrando a GetNegiciosByUserID");
+
+                var usuarioId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+                if (string.IsNullOrEmpty(usuarioId))
+                {
+                    _logger.LogWarning("User ID not found in token.");
+                    return Unauthorized("No se pudo obtener el ID del usuario.");
+                }
+
+                var (success, message, negocios) = await _negocioService.GetByUserId(usuarioId);
+
+                if (!success)
+                {
+                    _logger.LogError($"Error al obtener negocios por usuario: {message}");
+                    return BadRequest(message);
+                }
+
+                return negocios;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Excepción al obtener negocios: {ex.Message}");
+                return BadRequest($"Ocurrió un error: {ex.Message}");
+            }
+        }
+
+        [Authorize(Roles = "NEGOCIO")]
         [HttpPut("{id}")]
         public async Task<IActionResult> PutNegocio(int id, Negocio negocio)
         {
-            // Check if the ID in the URL matches the ID in the negocio object
             if (id != negocio.Id)
-            {
-                return BadRequest();
-            }
+                return BadRequest("ID del negocio no coincide.");
 
-            // Mark the negocio entity as modified
-            _context.Entry(negocio).State = EntityState.Modified;
+            var usuarioId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(usuarioId))
+                return Unauthorized("No se pudo obtener el ID del usuario.");
 
-            try
-            {
-                // Save changes to the database
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                // Handle concurrency issues
-                if (!NegocioExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw; // Rethrow the exception if it's not a concurrency issue
-                }
-            }
+            var (success, message) = await _negocioService.UpdateAsync(negocio, usuarioId);
 
-            // Return a NoContent response if the update is successful
+            if (!success)
+                return BadRequest(message);
+
+            return NoContent();
+        }
+        [Authorize(Roles = "NEGOCIO")]
+        [HttpPut("ByNombre/{nombre}")]
+        public async Task<IActionResult> PutNegocioPorNombre(string nombre, [FromBody] Negocio negocio)
+        {
+            if (!string.Equals(nombre, negocio.Nombre, StringComparison.OrdinalIgnoreCase))
+                return BadRequest("El nombre en la URL no coincide con el del negocio.");
+
+            var usuarioId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(usuarioId))
+                return Unauthorized("No se pudo obtener el ID del usuario.");
+
+            var (success, message) = await _negocioService.UpdateByNombreAsync(negocio, usuarioId);
+
+            if (!success)
+                return BadRequest(message);
+
             return NoContent();
         }
 
@@ -98,7 +135,6 @@ namespace bookme_backend.UI
                     return Unauthorized("No se pudo obtener el ID del usuario.");
                 }
 
-                // No necesitas chequear rol aquí porque el atributo Authorize ya lo hizo
 
                 var (success, message) = await _negocioService.AddAsync(negocio, usuarioId);
 
@@ -132,11 +168,6 @@ namespace bookme_backend.UI
             await _context.SaveChangesAsync();
 
             return NoContent();
-        }
-
-        private bool NegocioExists(int id)
-        {
-            return _context.Negocios.Any(e => e.Id == id);
         }
     }
 }

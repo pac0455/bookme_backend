@@ -57,13 +57,12 @@ namespace bookme_backend.Migrations
                 {
                     id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    nombre = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    descripcion = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    direccion = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    latitud = table.Column<double>(type: "float", nullable: true),
-                    longitud = table.Column<double>(type: "float", nullable: true),
-                    categoria = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    horario_atencion = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    nombre = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    descripcion = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    direccion = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    latitud = table.Column<double>(type: "float", nullable: false),
+                    longitud = table.Column<double>(type: "float", nullable: false),
+                    categoria = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
                     activo = table.Column<bool>(type: "bit", nullable: true)
                 },
                 constraints: table =>
@@ -174,6 +173,28 @@ namespace bookme_backend.Migrations
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "horarios",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    id_negocio = table.Column<int>(type: "int", nullable: false),
+                    dia_semana = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    hora_inicio = table.Column<TimeSpan>(type: "time", nullable: false),
+                    hora_fin = table.Column<TimeSpan>(type: "time", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_horarios", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_horarios_negocios_id_negocio",
+                        column: x => x.id_negocio,
+                        principalTable: "negocios",
+                        principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -398,6 +419,17 @@ namespace bookme_backend.Migrations
                 filter: "[NormalizedUserName] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
+                name: "IX_horarios_id_negocio",
+                table: "horarios",
+                column: "id_negocio");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_negocios_nombre",
+                table: "negocios",
+                column: "nombre",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_pagos_reserva_id",
                 table: "pagos",
                 column: "reserva_id");
@@ -465,6 +497,9 @@ namespace bookme_backend.Migrations
 
             migrationBuilder.DropTable(
                 name: "AspNetUserTokens");
+
+            migrationBuilder.DropTable(
+                name: "horarios");
 
             migrationBuilder.DropTable(
                 name: "pagos");

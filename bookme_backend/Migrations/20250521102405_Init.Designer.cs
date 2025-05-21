@@ -12,8 +12,8 @@ using bookme_backend.DataAcces.Models;
 namespace bookme_backend.Migrations
 {
     [DbContext(typeof(BookmeContext))]
-    [Migration("20250516173625_TAblaHorario")]
-    partial class TAblaHorario
+    [Migration("20250521102405_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -158,7 +158,7 @@ namespace bookme_backend.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("bookme_backend.DataAcces.Models.Horarios", b =>
+            modelBuilder.Entity("bookme_backend.DataAcces.Models.Horario", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -189,6 +189,8 @@ namespace bookme_backend.Migrations
                     b.HasIndex("IdNegocio");
 
                     b.ToTable("horarios");
+
+                    b.HasAnnotation("Relational:JsonPropertyName", "horarioAtencion");
                 });
 
             modelBuilder.Entity("bookme_backend.DataAcces.Models.Negocio", b =>
@@ -205,34 +207,41 @@ namespace bookme_backend.Migrations
                         .HasColumnName("activo");
 
                     b.Property<string>("Categoria")
+                        .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("categoria");
 
                     b.Property<string>("Descripcion")
+                        .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("descripcion");
 
                     b.Property<string>("Direccion")
+                        .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("direccion");
 
-                    b.Property<double?>("Latitud")
+                    b.Property<double>("Latitud")
                         .HasColumnType("float")
                         .HasColumnName("latitud");
 
-                    b.Property<double?>("Longitud")
+                    b.Property<double>("Longitud")
                         .HasColumnType("float")
                         .HasColumnName("longitud");
 
                     b.Property<string>("Nombre")
+                        .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("nombre");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Nombre")
+                        .IsUnique();
 
                     b.ToTable("negocios");
                 });
@@ -418,7 +427,7 @@ namespace bookme_backend.Migrations
                     b.ToTable("servicios");
                 });
 
-            modelBuilder.Entity("bookme_backend.DataAcces.Models.Suscripcione", b =>
+            modelBuilder.Entity("bookme_backend.DataAcces.Models.Suscripcion", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -622,7 +631,7 @@ namespace bookme_backend.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("bookme_backend.DataAcces.Models.Horarios", b =>
+            modelBuilder.Entity("bookme_backend.DataAcces.Models.Horario", b =>
                 {
                     b.HasOne("bookme_backend.DataAcces.Models.Negocio", "Negocio")
                         .WithMany("HorariosAtencion")
@@ -693,7 +702,7 @@ namespace bookme_backend.Migrations
                     b.Navigation("Negocio");
                 });
 
-            modelBuilder.Entity("bookme_backend.DataAcces.Models.Suscripcione", b =>
+            modelBuilder.Entity("bookme_backend.DataAcces.Models.Suscripcion", b =>
                 {
                     b.HasOne("bookme_backend.DataAcces.Models.Negocio", "IdNegocioNavigation")
                         .WithMany("Suscripciones")

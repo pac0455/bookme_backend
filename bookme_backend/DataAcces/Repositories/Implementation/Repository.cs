@@ -54,5 +54,23 @@ namespace bookme_backend.DataAcces.Repositories.Implementation
         {
             await _context.SaveChangesAsync();
         }
+        public virtual async Task<List<T>> GetWhereAsync(Expression<Func<T, bool>> predicate)
+        {
+            return await _dbSet.Where(predicate).ToListAsync();
+        }
+        public async Task<List<T>> GetWhereWithIncludesAsync(
+            Expression<Func<T, bool>> predicate,
+            params Expression<Func<T, object>>[] includes)
+            {
+                var query = _dbSet.Where(predicate);
+
+                foreach (var include in includes)
+                {
+                    query = query.Include(include);
+                }
+
+                return await query.ToListAsync();
+            }
+
     }
 }
