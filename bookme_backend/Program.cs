@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using bookme_backend.UI;
 
 namespace bookme_backend
 {
@@ -152,6 +153,7 @@ namespace bookme_backend
             app.UseAuthorization();
 
             app.MapControllers();
+
 //app.MapIdentityApi<Usuario>();  // Debe ir después de UseRouting
 
             app.Run();

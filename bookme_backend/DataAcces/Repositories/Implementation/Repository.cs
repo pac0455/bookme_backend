@@ -59,18 +59,33 @@ namespace bookme_backend.DataAcces.Repositories.Implementation
             return await _dbSet.Where(predicate).ToListAsync();
         }
         public async Task<List<T>> GetWhereWithIncludesAsync(
-            Expression<Func<T, bool>> predicate,
-            params Expression<Func<T, object>>[] includes)
+        Expression<Func<T, bool>> predicate,
+        params Expression<Func<T, object>>[] includes)
+        {
+            var query = _dbSet.Where(predicate);
+
+            foreach (var include in includes)
             {
-                var query = _dbSet.Where(predicate);
-
-                foreach (var include in includes)
-                {
-                    query = query.Include(include);
-                }
-
-                return await query.ToListAsync();
+                query = query.Include(include);
             }
 
+            return await query.ToListAsync();
+        }
+        public async Task<List<T>> GetWhereAsync(
+            Expression<Func<T, bool>> predicate,
+            Func<IQueryable<T>, IQueryable<T>>? include = null)
+                {
+                    IQueryable<T> query = _dbSet.Where(predicate);
+
+                    if (include != null)
+                    {
+                        query = include(query);
+                    }
+
+                    return await query.ToListAsync();
+                }
+
+
     }
+
 }

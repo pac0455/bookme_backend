@@ -1,4 +1,5 @@
 ﻿using bookme_backend.BLL.Interfaces;
+using bookme_backend.DataAcces.DTO;
 using bookme_backend.DataAcces.Models;
 using bookme_backend.DataAcces.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -6,17 +7,18 @@ using Microsoft.EntityFrameworkCore;
 namespace bookme_backend.BLL.Services
 {
     public class NegocioService(
-        IRepository<Horario> horarioRepo,
         IRepository<Negocio> negocioRepo,
         IRepository<Suscripcion> subcripcionesRepo,
+        IRepository<Reserva> reservaRepo,
+        IRepository<Servicio> servicioRepo,
         ILogger<NegocioService> logger
-        ) : INegocioService
+    ) : INegocioService
     {
-
         private readonly IRepository<Negocio> _negocioRepo = negocioRepo;
         private readonly IRepository<Suscripcion> _subcripcionesRepo = subcripcionesRepo;
-        private readonly IRepository<Horario> _horarioRepo = horarioRepo;
-        private readonly ILogger<NegocioService> _logger=logger;
+        private readonly IRepository<Reserva> _reservaRepo = reservaRepo;
+        private readonly IRepository<Servicio> _servicioRepo = servicioRepo;
+        private readonly ILogger<NegocioService> _logger = logger;
 
 
 
@@ -75,7 +77,118 @@ namespace bookme_backend.BLL.Services
             // Reutilizamos toda la lógica ya validada
             return await UpdateAsync(negocio, usuarioId);
         }
+        public async Task<(bool Success, string Message, List<ReservaDetalladaDto> Reservas)> GetReservasDetalladasByNegocioIdAsync(int negocioId)
+        {
+            try
+            {
+                // Verificar si el negocio existe
+                var negocioExiste = await _negocioRepo.Exist(n => n.Id == negocioId);
 
+                if (!negocioExiste)
+                {
+                    return (false, $"El negocio con ID {negocioId} no existe.", new List<ReservaDetalladaDto>());
+                }
+
+                // Traer los datos con Includes anidados
+                var reservas = await _reservaRepo.GetWhereAsync(
+                    r => r.NegocioId == negocioId,
+                    q => q
+                        .Include(r => r.ReservasServicios).ThenInclude(rs => rs.Servicio)
+                        .Include(r => r.Pagos)
+                );
+
+
+                // Mapear las reservas a DTO
+                var reservasDetalladas = reservas.Select(r => new ReservaDetalladaDto
+                {
+                    ReservaId = r.Id,
+                    Fecha = r.Fecha,
+                    Estado = r.Estado,
+                    ComentarioCliente = r.ComentarioCliente,
+                    EstadoPagoGeneral = r.Pagos.FirstOrDefault()?.EstadoPago ?? "sin pago",
+                    Servicios = r.ReservasServicios.Select(rs => new ServicioConPagoDto
+                    {
+                        Nombre = rs.Servicio?.Nombre,
+                        Precio = (double?)rs.Servicio?.Precio,
+                        Pago = r.Pagos.FirstOrDefault() != null
+                            ? new PagoDto
+                            {
+                                Monto = (double)r.Pagos.First().Monto,
+                                Estado = r.Pagos.First().EstadoPago,
+                                Metodo = r.Pagos.First().MetodoPago,
+                                FechaPago = r.Pagos.First().FechaPago ?? DateTime.MinValue
+                            }
+                            : null
+                    }).ToList()
+                }).ToList();
+
+                return (true, "Reservas detalladas obtenidas correctamente.", reservasDetalladas);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error al obtener reservas detalladas del negocio con ID {negocioId}");
+                return (false, $"Error al obtener las reservas detalladas: {ex.Message}", new List<ReservaDetalladaDto>());
+            }
+        }
+
+        public async Task<(bool Success, string Message, List<Servicio> Servicios)> GetServiciosReservadosByNegocioIdAsync(int negocioId)
+        {
+            try
+            {
+                // Verificamos si el negocio existe
+                var negocioExiste = await _negocioRepo.Exist(n => n.Id == negocioId);
+                if (!negocioExiste)
+                {
+                    return (false, $"El negocio con ID {negocioId} no existe.", new List<Servicio>());
+                }
+
+                // Cargamos reservas con servicios incluidos
+                var reservas = await _reservaRepo.GetWhereWithIncludesAsync(
+                    r => r.NegocioId == negocioId,
+                    r => r.ReservasServicios.Select(rs => rs.Servicio)
+                );
+
+                // Extraemos todos los servicios reservados
+                var serviciosReservados = reservas
+                    .SelectMany(r => r.ReservasServicios)
+                    .Select(rs => rs.Servicio)
+                    .Where(s => s != null) // por seguridad
+                    .DistinctBy(s => s.Id) // evitar duplicados
+                    .ToList();
+
+                return (true, "Servicios reservados obtenidos correctamente.", serviciosReservados);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error al obtener servicios reservados del negocio con ID {negocioId}");
+                return (false, $"Error al obtener los servicios reservados: {ex.Message}", new List<Servicio>());
+            }
+        }
+
+
+
+        public async Task<(bool Success, string Message, List<Servicio> Servicios)> GetServiciosByNegocioIdAsync(int negocioId)
+        {
+            try
+            {
+                // Verificar si el negocio existe
+                var negocioExiste = await _negocioRepo.Exist(n => n.Id == negocioId);
+
+                if (!negocioExiste)
+                {
+                    return (false, $"El negocio con ID {negocioId} no existe.", new List<Servicio>());
+                }
+
+                var servicios = await _servicioRepo.GetWhereAsync(s => s.NegocioId == negocioId);
+
+                return (true, "Servicios obtenidos correctamente.", servicios.ToList());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error al obtener servicios del negocio con ID {negocioId}");
+                return (false, $"Error al obtener los servicios: {ex.Message}", new List<Servicio>());
+            }
+        }
 
 
         public async Task<(bool Success, string Message)> AddRangeAsync(List<Negocio> negocios, string usuarioId)
@@ -159,5 +272,27 @@ namespace bookme_backend.BLL.Services
 
             return (true, "Negocio actualizado correctamente.");
         }
+
+        public async Task<(bool Success, string Message, List<Reserva> Reservas)> GetReservasByNegocioIdAsync(int negocioId)
+        {
+            try
+            {
+                var reservas = await _reservaRepo.GetWhereWithIncludesAsync(
+                    r => r.NegocioId == negocioId,
+                    r => r.Usuario,
+                    r => r.ReservasServicios,
+                    r => r.Pagos,
+                    r => r.Valoraciones
+                );
+
+                return (true, "Reservas obtenidas correctamente.", reservas.ToList());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error al obtener reservas del negocio con ID {negocioId}");
+                return (false, $"Error al obtener las reservas: {ex.Message}", new List<Reserva>());
+            }
+        }
+
     }
 }

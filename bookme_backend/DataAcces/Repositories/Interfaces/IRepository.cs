@@ -15,6 +15,11 @@ namespace bookme_backend.DataAcces.Repositories.Interfaces
         Task<List<T>> GetWhereAsync(Expression<Func<T, bool>> predicate);
 
         Task<List<T>> GetWhereWithIncludesAsync( Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes);
+        Task<List<T>> GetWhereAsync(
+            Expression<Func<T, bool>> predicate,
+            Func<IQueryable<T>, IQueryable<T>>? include = null
+        );
+
 
 
     }

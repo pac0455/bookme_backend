@@ -1,4 +1,5 @@
-﻿using bookme_backend.DataAcces.Models;
+﻿using bookme_backend.DataAcces.DTO;
+using bookme_backend.DataAcces.Models;
 
 namespace bookme_backend.BLL.Interfaces
 {
@@ -8,7 +9,14 @@ namespace bookme_backend.BLL.Interfaces
         Task<(bool Success, string Message)> AddAsync(Negocio negocio, string usuarioId);
         Task<(bool Success, string Message, List<Negocio> negocios)> GetByUserId(string userId);
         Task<(bool Success, string Message)> UpdateAsync(Negocio negocio, string usuarioId);
-        Task<(bool Success, string Message)> UpdateByNombreAsync(Negocio negocio, string usuarioId); 
+        Task<(bool Success, string Message)> UpdateByNombreAsync(Negocio negocio, string usuarioId);
+        Task<(bool Success, string Message, List<Reserva> Reservas)> GetReservasByNegocioIdAsync(int negocioId);
+        Task<(bool Success, string Message, List<Servicio> Servicios)> GetServiciosByNegocioIdAsync(int negocioId);
+        Task<(bool Success, string Message, List<ReservaDetalladaDto> Reservas)> GetReservasDetalladasByNegocioIdAsync(int negocioId);
+
+
+
+
     }
 
 }

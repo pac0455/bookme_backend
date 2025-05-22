@@ -1,5 +1,4 @@
-﻿
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using bookme_backend.DataAcces.Models;
 using bookme_backend.BLL.Interfaces;
@@ -169,5 +168,50 @@ namespace bookme_backend.UI
 
             return NoContent();
         }
+        [Authorize(Roles = "NEGOCIO")]
+        [HttpGet("{id}/reservas")]
+        public async Task<IActionResult> GetReservasByNegocioId(int id)
+        {
+            var (success, message, reservas) = await _negocioService.GetReservasByNegocioIdAsync(id);
+
+            if (!success)
+            {
+                _logger.LogError($"Error al obtener reservas del negocio {id}: {message}");
+                return BadRequest(message);
+            }
+
+            return Ok(reservas);
+        }
+        [Authorize(Roles = "NEGOCIO")]
+        [HttpGet("{id}/reservas/detalladas")]
+        public async Task<IActionResult> GetReservasDetalladas(int id)
+        {
+            var (success, message, reservas) = await _negocioService.GetReservasDetalladasByNegocioIdAsync(id);
+
+            if (!success)
+            {
+                _logger.LogError($"Error al obtener reservas detalladas del negocio {id}: {message}");
+                return BadRequest(message);
+            }
+
+            return Ok(reservas);
+        }
+
+        [Authorize(Roles = "NEGOCIO")]
+        [HttpGet("{id}/servicios")]
+        public async Task<IActionResult> GetServiciosByNegocioId(int id)
+        {
+            var (success, message, servicios) = await _negocioService.GetServiciosByNegocioIdAsync(id);
+
+            if (!success)
+            {
+                _logger.LogError($"Error al obtener servicios del negocio {id}: {message}");
+                return BadRequest(message);
+            }
+
+            return Ok(servicios);
+        }
+
+
     }
 }
