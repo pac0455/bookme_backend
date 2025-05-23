@@ -1,0 +1,100 @@
+﻿using bookme_backend.BLL.Interfaces;
+using bookme_backend.DataAcces.DTO;
+using bookme_backend.DataAcces.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+namespace bookme_backend.API.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    //[Authorize(Roles = "NEGOCIO")]  // Solo usuarios con rol NEGOCIO pueden acceder
+    public class ServicioController : ControllerBase
+    {
+        private readonly IServicioService _servicioService;
+        private readonly ILogger<ServicioController> _logger;
+
+        public ServicioController(IServicioService servicioService, ILogger<ServicioController> logger)
+        {
+            _servicioService = servicioService;
+            _logger = logger;
+        }
+
+        // GET: api/Servicio
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<Servicio>>> GetServicios()
+        {
+            var servicios = await _servicioService.GetAllServiciosAsync();
+            return Ok(servicios);
+        }
+
+        // GET: api/Servicio/Negocio/5
+        [HttpGet("Negocio/{negocioId}")]
+        public async Task<ActionResult> GetServiciosByNegocioId(int negocioId)
+        {
+            var (success, message, servicios) = await _servicioService.GetServiciosByNegocioIdAsync(negocioId);
+            if (!success)
+                return NotFound(new { message });
+
+            return Ok(servicios);
+        }
+
+        // GET: api/Servicio/Detalle/Negocio/5
+        [HttpGet("Detalle/Negocio/{negocioId}")]
+        public async Task<ActionResult> GetServiciosDetalleByNegocioId(int negocioId)
+        {
+            var (success, message, serviciosDetalle) = await _servicioService.GetServiciosDetalleByNegocioIdAsync(negocioId);
+            if (!success)
+                return NotFound(new { message });
+
+            return Ok(serviciosDetalle);
+        }
+
+        // GET: api/Servicio/5
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Servicio>> GetServicio(int id)
+        {
+            var servicio = await _servicioService.GetServicioByIdAsync(id);
+            if (servicio == null)
+                return NotFound();
+
+            return Ok(servicio);
+        }
+
+        // POST: api/Servicio
+        [HttpPost]
+        public async Task<ActionResult> PostServicio(ServicioDto servicio)
+        {
+            var (success, message, nuevoServicio) = await _servicioService.AddServicioAsync(servicio);
+            if (!success)
+                return BadRequest(new { message });
+
+            return CreatedAtAction(nameof(GetServicio), new { id = nuevoServicio.Id }, nuevoServicio);
+        }
+
+        // PUT: api/Servicio/5
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutServicio(int id, ServicioDto servicio)
+        {
+            var (success, message) = await _servicioService.UpdateServicioAsync(id, servicio);
+            if (!success)
+                return BadRequest(new { message });
+
+            return NoContent();
+        }
+
+        // DELETE: api/Servicio/5
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteServicio(int id)
+        {
+            var (success, message) = await _servicioService.DeleteServicioAsync(id);
+            if (!success)
+                return NotFound(new { message });
+
+            return NoContent();
+        }
+    }
+}

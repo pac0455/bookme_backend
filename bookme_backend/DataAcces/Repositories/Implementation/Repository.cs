@@ -73,18 +73,18 @@ namespace bookme_backend.DataAcces.Repositories.Implementation
         }
         public async Task<List<T>> GetWhereAsync(
             Expression<Func<T, bool>> predicate,
-            Func<IQueryable<T>, IQueryable<T>>? include = null)
-                {
-                    IQueryable<T> query = _dbSet.Where(predicate);
+            Func<IQueryable<T>, IQueryable<T>>? include = null
+        )
+        {
+            IQueryable<T> query = _dbSet.Where(predicate);
 
-                    if (include != null)
-                    {
-                        query = include(query);
-                    }
+            if (include != null)
+            {
+                query = include(query);
+            }
 
-                    return await query.ToListAsync();
-                }
-
+            return await query.ToListAsync();
+        }
 
     }
 

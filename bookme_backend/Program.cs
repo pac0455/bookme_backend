@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using bookme_backend.UI;
+using bookme_backend.Services;
 
 namespace bookme_backend
 {
@@ -97,6 +98,8 @@ namespace bookme_backend
             builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
             builder.Services.AddScoped<IUsuarioService, UsuarioService>();
             builder.Services.AddScoped<IHorarioService, HorarioService>();
+            builder.Services.AddScoped<IServicioService, ServicioService>();
+
 
             builder.Services.AddScoped<INegocioService, NegocioService>();
             builder.Services.AddScoped<ICustomEmailSender, EmailSender>();
