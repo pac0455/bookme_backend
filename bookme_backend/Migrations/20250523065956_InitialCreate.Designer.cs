@@ -12,8 +12,8 @@ using bookme_backend.DataAcces.Models;
 namespace bookme_backend.Migrations
 {
     [DbContext(typeof(BookmeContext))]
-    [Migration("20250521102405_Init")]
-    partial class Init
+    [Migration("20250523065956_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -156,6 +156,48 @@ namespace bookme_backend.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
+                });
+
+            modelBuilder.Entity("Servicio", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Descripcion")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("descripcion");
+
+                    b.Property<int?>("DuracionMinutos")
+                        .HasColumnType("int")
+                        .HasColumnName("duracion_minutos");
+
+                    b.Property<string>("ImagenUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("imagen_url");
+
+                    b.Property<int>("NegocioId")
+                        .HasColumnType("int")
+                        .HasColumnName("negocio_id");
+
+                    b.Property<string>("Nombre")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("nombre");
+
+                    b.Property<decimal?>("Precio")
+                        .HasColumnType("decimal(10, 2)")
+                        .HasColumnName("precio");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NegocioId");
+
+                    b.ToTable("servicios");
                 });
 
             modelBuilder.Entity("bookme_backend.DataAcces.Models.Horario", b =>
@@ -390,43 +432,6 @@ namespace bookme_backend.Migrations
                     b.ToTable("reservas_servicios");
                 });
 
-            modelBuilder.Entity("bookme_backend.DataAcces.Models.Servicio", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Descripcion")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("descripcion");
-
-                    b.Property<int?>("DuracionMinutos")
-                        .HasColumnType("int")
-                        .HasColumnName("duracion_minutos");
-
-                    b.Property<int>("NegocioId")
-                        .HasColumnType("int")
-                        .HasColumnName("negocio_id");
-
-                    b.Property<string>("Nombre")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
-                        .HasColumnName("nombre");
-
-                    b.Property<decimal?>("Precio")
-                        .HasColumnType("decimal(10, 2)")
-                        .HasColumnName("precio");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("NegocioId");
-
-                    b.ToTable("servicios");
-                });
-
             modelBuilder.Entity("bookme_backend.DataAcces.Models.Suscripcion", b =>
                 {
                     b.Property<int>("Id")
@@ -631,6 +636,17 @@ namespace bookme_backend.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Servicio", b =>
+                {
+                    b.HasOne("bookme_backend.DataAcces.Models.Negocio", "Negocio")
+                        .WithMany("Servicios")
+                        .HasForeignKey("NegocioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Negocio");
+                });
+
             modelBuilder.Entity("bookme_backend.DataAcces.Models.Horario", b =>
                 {
                     b.HasOne("bookme_backend.DataAcces.Models.Negocio", "Negocio")
@@ -680,7 +696,7 @@ namespace bookme_backend.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("bookme_backend.DataAcces.Models.Servicio", "Servicio")
+                    b.HasOne("Servicio", "Servicio")
                         .WithMany("ReservasServicios")
                         .HasForeignKey("ServicioId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -689,17 +705,6 @@ namespace bookme_backend.Migrations
                     b.Navigation("Reserva");
 
                     b.Navigation("Servicio");
-                });
-
-            modelBuilder.Entity("bookme_backend.DataAcces.Models.Servicio", b =>
-                {
-                    b.HasOne("bookme_backend.DataAcces.Models.Negocio", "Negocio")
-                        .WithMany("Servicios")
-                        .HasForeignKey("NegocioId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Negocio");
                 });
 
             modelBuilder.Entity("bookme_backend.DataAcces.Models.Suscripcion", b =>
@@ -740,6 +745,11 @@ namespace bookme_backend.Migrations
                     b.Navigation("Usuario");
                 });
 
+            modelBuilder.Entity("Servicio", b =>
+                {
+                    b.Navigation("ReservasServicios");
+                });
+
             modelBuilder.Entity("bookme_backend.DataAcces.Models.Negocio", b =>
                 {
                     b.Navigation("HorariosAtencion");
@@ -758,11 +768,6 @@ namespace bookme_backend.Migrations
                     b.Navigation("ReservasServicios");
 
                     b.Navigation("Valoraciones");
-                });
-
-            modelBuilder.Entity("bookme_backend.DataAcces.Models.Servicio", b =>
-                {
-                    b.Navigation("ReservasServicios");
                 });
 
             modelBuilder.Entity("bookme_backend.DataAcces.Models.Usuario", b =>

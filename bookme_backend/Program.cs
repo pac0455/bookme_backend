@@ -15,6 +15,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using bookme_backend.UI;
 using bookme_backend.Services;
+using Microsoft.Extensions.FileProviders;
 
 namespace bookme_backend
 {
@@ -105,20 +106,9 @@ namespace bookme_backend
             builder.Services.AddScoped<ICustomEmailSender, EmailSender>();
 
 
-
-
             builder.Logging.AddDebug();
             builder.Logging.AddConsole();
-
-
-
-
-
             // Registra primero la implementación concreta como Singleton
-
-
-
-
             //Hasher
             builder.Services.AddScoped<IPasswordHelper, PasswordHelper>();
             //IDENTITY USER
@@ -148,7 +138,21 @@ namespace bookme_backend
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+            app.UseStaticFiles(); // Esto habilita wwwroot (por defecto)
+            var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
+            if (!Directory.Exists(uploadsPath))
+            {
+                Directory.CreateDirectory(uploadsPath);
+            }
 
+
+            // Habilita servir archivos desde la carpeta 'uploads'
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(
+                    Path.Combine(Directory.GetCurrentDirectory(), "uploads")),
+                RequestPath = "/uploads"
+            });
             app.UseHttpsRedirection();
             app.UseRouting();  // Esto es absolutamente crítico
 
@@ -156,8 +160,6 @@ namespace bookme_backend
             app.UseAuthorization();
 
             app.MapControllers();
-
-//app.MapIdentityApi<Usuario>();  // Debe ir después de UseRouting
 
             app.Run();
 

@@ -13,5 +13,7 @@ namespace bookme_backend.BLL.Interfaces
         Task<(bool Success, string Message)> DeleteServicioAsync(int id);
         Task<List<Servicio>> GetAllServiciosAsync();
         Task<(bool Success, string Message, List<ServicioDetalleDto> Servicios)> GetServiciosDetalleByNegocioIdAsync(int negocioId);
+        Task<(bool Success, string Message, byte[]? ImageBytes, string ContentType)> GetImagenByServicioIdAsync(int servicioId);
+
     }
 }

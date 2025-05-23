@@ -15,6 +15,7 @@
         public double ValoracionPromedio { get; set; }
         public int NumeroValoraciones { get; set; }
         public int NumeroReservas { get; set; }
+        public string? ImagenUrl { get; set; }
     }
 
 

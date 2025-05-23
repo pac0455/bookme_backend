@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using bookme_backend.DataAcces.Models;
 using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
-
-namespace bookme_backend.DataAcces.Models;
+using System.ComponentModel.DataAnnotations;
 
 [Table("servicios")]
 public partial class Servicio
@@ -28,6 +24,10 @@ public partial class Servicio
 
     [Column("precio", TypeName = "decimal(10, 2)")]
     public decimal? Precio { get; set; }
+
+    [Column("imagen_url")]
+    [StringLength(500)]
+    public string? ImagenUrl { get; set; }
 
     [ForeignKey("NegocioId")]
     [InverseProperty("Servicios")]

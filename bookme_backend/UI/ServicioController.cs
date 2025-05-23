@@ -64,17 +64,30 @@ namespace bookme_backend.API.Controllers
             return Ok(servicio);
         }
 
+        [HttpGet("{id}/imagen")]
+        public async Task<IActionResult> GetImagen(int id)
+        {
+            var (success, message, imageBytes, contentType) = await _servicioService.GetImagenByServicioIdAsync(id);
+
+            if (!success)
+                return NotFound(new { message });
+
+            return File(imageBytes, contentType);
+        }
+
+
         // POST: api/Servicio
         [HttpPost]
-        public async Task<ActionResult> PostServicio(ServicioDto servicio)
+        [Consumes("multipart/form-data")]
+        public async Task<ActionResult> PostServicio([FromForm] ServicioDto servicio)
         {
             var (success, message, nuevoServicio) = await _servicioService.AddServicioAsync(servicio);
+
             if (!success)
                 return BadRequest(new { message });
 
-            return CreatedAtAction(nameof(GetServicio), new { id = nuevoServicio.Id }, nuevoServicio);
+            return CreatedAtAction(nameof(GetServicio), new { id = nuevoServicio!.Id }, nuevoServicio);
         }
-
         // PUT: api/Servicio/5
         [HttpPut("{id}")]
         public async Task<IActionResult> PutServicio(int id, ServicioDto servicio)

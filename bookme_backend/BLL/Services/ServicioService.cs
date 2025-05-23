@@ -9,6 +9,8 @@ using bookme_backend.BLL.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using bookme_backend.DataAcces.DTO;
 using Microsoft.EntityFrameworkCore;
+using bookme_backend.API.Controllers;
+using Microsoft.AspNetCore.Mvc;
 
 
 namespace bookme_backend.Services
@@ -121,14 +123,12 @@ namespace bookme_backend.Services
 
             try
             {
-                // Guardar imagen si existe
                 if (dto.Imagen != null && dto.Imagen.Length > 0)
                 {
                     var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "uploads", "servicios");
                     if (!Directory.Exists(uploadsFolder))
                         Directory.CreateDirectory(uploadsFolder);
 
-                    // Generar nombre único para la imagen
                     var uniqueFileName = $"{Guid.NewGuid()}_{dto.Imagen.FileName}";
                     var filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
@@ -137,7 +137,6 @@ namespace bookme_backend.Services
                         await dto.Imagen.CopyToAsync(stream);
                     }
 
-                    // Guardar la ruta relativa o URL (depende de cómo sirvas la imagen)
                     servicio.ImagenUrl = Path.Combine("uploads", "servicios", uniqueFileName).Replace("\\", "/");
                 }
 
@@ -157,6 +156,34 @@ namespace bookme_backend.Services
                 return (false, $"Error inesperado: {ex.Message}", null);
             }
         }
+        public async Task<(bool Success, string Message, byte[]? ImageBytes, string ContentType)> GetImagenByServicioIdAsync(int servicioId)
+        {
+            var servicio = await _servicioRepo.GetByIdAsync(servicioId);
+            if (servicio == null)
+                return (false, "Servicio no encontrado.", null, "");
+
+            if (string.IsNullOrEmpty(servicio.ImagenUrl))
+                return (false, "El servicio no tiene imagen asignada.", null, "");
+
+            var filePath = Path.Combine(Directory.GetCurrentDirectory(), servicio.ImagenUrl.Replace("/", Path.DirectorySeparatorChar.ToString()));
+
+            if (!System.IO.File.Exists(filePath))
+                return (false, "La imagen no existe en el servidor.", null, "");
+
+            var extension = Path.GetExtension(filePath).ToLowerInvariant();
+            var contentType = extension switch
+            {
+                ".png" => "image/png",
+                ".webp" => "image/webp",
+                ".jpg" or ".jpeg" => "image/jpeg",
+                _ => "application/octet-stream"
+            };
+
+            var imageBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+            return (true, "Imagen obtenida correctamente.", imageBytes, contentType);
+        }
+
+
 
 
         /// <summary>
