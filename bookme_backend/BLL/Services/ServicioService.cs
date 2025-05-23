@@ -218,8 +218,10 @@ namespace bookme_backend.Services
             }
             catch (DbUpdateException dbEx)
             {
-                _logger.LogError(dbEx, "Error al actualizar servicio en la base de datos.");
-                return (false, "Error al actualizar servicio en la base de datos.");
+                var detailedMessage = dbEx.InnerException?.Message ?? dbEx.Message;
+
+                _logger.LogError(dbEx, "Error al actualizar el servicio con ID {Id}. Detalles: {Detalle}", id, detailedMessage);
+                return (false, $"Error al actualizar el servicio en la base de datos: {detailedMessage}");
             }
             catch (Exception ex)
             {
