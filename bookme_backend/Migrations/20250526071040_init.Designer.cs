@@ -12,8 +12,8 @@ using bookme_backend.DataAcces.Models;
 namespace bookme_backend.Migrations
 {
     [DbContext(typeof(BookmeContext))]
-    [Migration("20250524214233_AddColumnLogo")]
-    partial class AddColumnLogo
+    [Migration("20250526071040_init")]
+    partial class init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

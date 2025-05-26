@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace bookme_backend.Migrations
 {
     /// <inheritdoc />
-    public partial class Init : Migration
+    public partial class init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -60,6 +60,7 @@ namespace bookme_backend.Migrations
                     nombre = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
                     descripcion = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
                     direccion = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    logo = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
                     latitud = table.Column<double>(type: "float", nullable: false),
                     longitud = table.Column<double>(type: "float", nullable: false),
                     categoria = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),

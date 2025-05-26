@@ -54,16 +54,25 @@ namespace bookme_backend.UI.Controllers
             try
             {
                 var result = await _usuarioService.RegisterAsync(model);
-                return Ok(new { Success = true, Data = result });
+                return Ok(new { success = true, data = result });
             }
             catch (ValidationException vex)
             {
-                return BadRequest(new { Success = false, vex.Message });
+                return BadRequest(new
+                {
+                    success = false,
+                    message = vex.Message,       // Mensaje general
+                    errores = vex.Errores        // Diccionario de errores por campo
+                });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error inesperado en Register");
-                return StatusCode(500, new { Success = false, Message = "Error interno del servidor." });
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Error interno del servidor.",
+                    details = ex.Message
+                });
             }
         }
         [HttpPost("resend-confirmation")]
@@ -91,7 +100,13 @@ namespace bookme_backend.UI.Controllers
             }
             catch (ValidationException vex)
             {
-                return BadRequest(new { Success = false, vex });
+                return BadRequest(new
+                {
+                    Success = false,
+                    vex.Message,
+                    vex.Errores
+                });
+
             }
             catch (Exception ex)
             {

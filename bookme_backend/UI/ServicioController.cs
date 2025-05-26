@@ -45,7 +45,6 @@ namespace bookme_backend.API.Controllers
         }
 
         // GET: api/Servicio/Detalle/Negocio/5
-        [Authorize(Roles = "NEGOCIO")]
         [HttpGet("Detalle/Negocio/{negocioId}")]
         public async Task<ActionResult> GetServiciosDetalleByNegocioId(int negocioId)
         {
