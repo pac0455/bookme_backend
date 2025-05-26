@@ -12,8 +12,8 @@ using bookme_backend.DataAcces.Models;
 namespace bookme_backend.Migrations
 {
     [DbContext(typeof(BookmeContext))]
-    [Migration("20250523065956_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20250524214233_AddColumnLogo")]
+    partial class AddColumnLogo
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -269,6 +269,11 @@ namespace bookme_backend.Migrations
                     b.Property<double>("Latitud")
                         .HasColumnType("float")
                         .HasColumnName("latitud");
+
+                    b.Property<string>("LogoUrl")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("logo");
 
                     b.Property<double>("Longitud")
                         .HasColumnType("float")

@@ -24,6 +24,9 @@ public partial class Negocio
     [Column("direccion")]
     [StringLength(255), Required]
     public string? Direccion { get; set; }
+    [Column("logo")]
+    [StringLength(255)]
+    public string? LogoUrl { get; set; }
 
     [Column("latitud"), Required]
     public double? Latitud { get; set; }

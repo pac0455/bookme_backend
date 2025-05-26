@@ -73,7 +73,6 @@ namespace bookme_backend.Services
                 return (false, $"Error al obtener servicios: {ex.Message}", new List<Servicio>());
             }
         }
-
         /// <summary>
         /// Obtiene todos los servicios disponibles.
         /// </summary>
@@ -83,7 +82,6 @@ namespace bookme_backend.Services
             // Devuelve la lista completa de servicios usando el repositorio genérico
             return await _servicioRepo.GetAllAsync();
         }
-
         /// <summary>
         /// Obtiene un servicio específico por su ID.
         /// </summary>
@@ -94,7 +92,6 @@ namespace bookme_backend.Services
             // Busca y devuelve el servicio por su clave primaria
             return await _servicioRepo.GetByIdAsync(id);
         }
-
         /// <summary>
         /// Añade un nuevo servicio a un negocio.
         /// </summary>
@@ -156,6 +153,7 @@ namespace bookme_backend.Services
                 return (false, $"Error inesperado: {ex.Message}", null);
             }
         }
+        
         public async Task<(bool Success, string Message, byte[]? ImageBytes, string ContentType)> GetImagenByServicioIdAsync(int servicioId)
         {
             var servicio = await _servicioRepo.GetByIdAsync(servicioId);
@@ -182,54 +180,105 @@ namespace bookme_backend.Services
             var imageBytes = await System.IO.File.ReadAllBytesAsync(filePath);
             return (true, "Imagen obtenida correctamente.", imageBytes, contentType);
         }
-
-
-
-
         /// <summary>
         /// Actualiza los datos de un servicio existente.
         /// </summary>
         /// <param name="id">ID del servicio a actualizar</param>
         /// <param name="servicioDto">Datos nuevos del servicio</param>
         /// <returns>Tupla con éxito y mensaje</returns>
-        public async Task<(bool Success, string Message)> UpdateServicioAsync(int id, ServicioDto servicioDto)
+        public async Task<(bool Success, string Message, ServicioDto? ServicioActualizado)> UpdateServicioAsync(int id, ServicioUpdateDto servicioDto)
         {
             if (servicioDto == null)
-                return (false, "El servicio no puede ser nulo.");
+                return (false, "El servicio no puede ser nulo.", null);
 
             // Buscar el servicio existente
             var servicioExistente = await _servicioRepo.GetByIdAsync(id);
             if (servicioExistente == null)
-                return (false, "Servicio no encontrado.");
+                return (false, "Servicio no encontrado.", null);
 
             // Actualizar manualmente cada propiedad con los datos del DTO
             servicioExistente.Nombre = servicioDto.Nombre;
             servicioExistente.Descripcion = servicioDto.Descripcion;
             servicioExistente.DuracionMinutos = servicioDto.DuracionMinutos;
             servicioExistente.Precio = servicioDto.Precio;
-            servicioExistente.NegocioId = servicioDto.NegocioId;
 
             try
             {
                 // Actualizamos la entidad y guardamos cambios
                 _servicioRepo.Update(servicioExistente);
                 await _servicioRepo.SaveChangesAsync();
-                return (true, "Servicio actualizado correctamente.");
+
+                // Convertir la entidad actualizada a DTO para devolverla
+                var servicioActualizadoDto = new ServicioDto
+                {
+                    Nombre = servicioExistente.Nombre,
+                    Descripcion = servicioExistente.Descripcion,
+                    DuracionMinutos = servicioExistente.DuracionMinutos ?? -1,
+                    Precio = servicioExistente.Precio ?? -1
+                };
+
+                return (true, "Servicio actualizado correctamente.", servicioActualizadoDto);
             }
             catch (DbUpdateException dbEx)
             {
                 var detailedMessage = dbEx.InnerException?.Message ?? dbEx.Message;
 
                 _logger.LogError(dbEx, "Error al actualizar el servicio con ID {Id}. Detalles: {Detalle}", id, detailedMessage);
-                return (false, $"Error al actualizar el servicio en la base de datos: {detailedMessage}");
+                return (false, $"Error al actualizar el servicio en la base de datos: {detailedMessage}", null);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error inesperado al actualizar servicio.");
-                return (false, $"Error inesperado: {ex.Message}");
+                return (false, $"Error inesperado: {ex.Message}", null);
             }
         }
 
+        public async Task<(bool Success, string Message)> UpdateImagenServicioAsync(int servicioId, Imagen nuevaImagen)
+        {
+            var imagen= nuevaImagen.Url;
+            if (imagen == null || imagen.Length == 0)
+                return (false, "La nueva imagen es inválida.");
+
+            var servicio = await _servicioRepo.GetByIdAsync(servicioId);
+            if (servicio == null)
+                return (false, "Servicio no encontrado.");
+
+            try
+            {
+                // Eliminar la imagen anterior si existe
+                if (!string.IsNullOrWhiteSpace(servicio.ImagenUrl))
+                {
+                    var oldImagePath = Path.Combine(Directory.GetCurrentDirectory(), servicio.ImagenUrl.Replace("/", Path.DirectorySeparatorChar.ToString()));
+                    if (File.Exists(oldImagePath))
+                        File.Delete(oldImagePath);
+                }
+
+                // Guardar la nueva imagen
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "uploads", "servicios");
+                if (!Directory.Exists(uploadsFolder))
+                    Directory.CreateDirectory(uploadsFolder);
+
+                var uniqueFileName = $"{Guid.NewGuid()}_{imagen.FileName}";
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await imagen.CopyToAsync(stream);
+                }
+
+                servicio.ImagenUrl = Path.Combine("uploads", "servicios", uniqueFileName).Replace("\\", "/");
+
+                _servicioRepo.Update(servicio);
+                await _servicioRepo.SaveChangesAsync();
+
+                return (true, "Imagen del servicio actualizada correctamente.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al actualizar la imagen del servicio.");
+                return (false, $"Error inesperado: {ex.Message}");
+            }
+        }
         /// <summary>
         /// Obtiene detalles de los servicios de un negocio, incluyendo datos relacionados como valoraciones y reservas.
         /// </summary>
@@ -327,7 +376,6 @@ namespace bookme_backend.Services
                 return (false, $"Error al obtener servicios detallados: {ex.Message}", new List<ServicioDetalleDto>());
             }
         }
-
         /// <summary>
         /// Elimina un servicio dado su ID.
         /// </summary>

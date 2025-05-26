@@ -24,6 +24,7 @@ namespace bookme_backend.API.Controllers
         }
 
         // GET: api/Servicio
+        [Authorize(Roles = "NEGOCIO")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Servicio>>> GetServicios()
         {
@@ -32,6 +33,7 @@ namespace bookme_backend.API.Controllers
         }
 
         // GET: api/Servicio/Negocio/5
+        [Authorize(Roles = "NEGOCIO")]
         [HttpGet("Negocio/{negocioId}")]
         public async Task<ActionResult> GetServiciosByNegocioId(int negocioId)
         {
@@ -43,6 +45,7 @@ namespace bookme_backend.API.Controllers
         }
 
         // GET: api/Servicio/Detalle/Negocio/5
+        [Authorize(Roles = "NEGOCIO")]
         [HttpGet("Detalle/Negocio/{negocioId}")]
         public async Task<ActionResult> GetServiciosDetalleByNegocioId(int negocioId)
         {
@@ -54,6 +57,7 @@ namespace bookme_backend.API.Controllers
         }
 
         // GET: api/Servicio/5
+        [Authorize(Roles = "NEGOCIO")]
         [HttpGet("{id}")]
         public async Task<ActionResult<Servicio>> GetServicio(int id)
         {
@@ -63,6 +67,7 @@ namespace bookme_backend.API.Controllers
 
             return Ok(servicio);
         }
+  
 
         [HttpGet("{id}/imagen")]
         public async Task<IActionResult> GetImagen(int id)
@@ -78,6 +83,7 @@ namespace bookme_backend.API.Controllers
 
         // POST: api/Servicio
         [HttpPost]
+        [Authorize(Roles = "NEGOCIO")]
         [Consumes("multipart/form-data")]
         public async Task<ActionResult> PostServicio([FromForm] ServicioDto servicio)
         {
@@ -90,16 +96,31 @@ namespace bookme_backend.API.Controllers
         }
         // PUT: api/Servicio/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutServicio(int id, ServicioDto servicio)
+        [Authorize(Roles = "NEGOCIO")]
+        public async Task<IActionResult> PutServicio(int id, ServicioUpdateDto servicio)
         {
-            var (success, message) = await _servicioService.UpdateServicioAsync(id, servicio);
+            var (success, message, servicioActualizado) = await _servicioService.UpdateServicioAsync(id, servicio);
+            if (!success)
+                return BadRequest(new { message });
+
+            return Ok(servicioActualizado);
+        }
+
+        [HttpPut("{id}/imagen")]
+        [Authorize(Roles = "NEGOCIO")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> PutImagenServicio(int id, [FromForm] Imagen imagen)
+        {
+            var (success, message) = await _servicioService.UpdateImagenServicioAsync(id, imagen);
             if (!success)
                 return BadRequest(new { message });
 
             return NoContent();
         }
 
+
         // DELETE: api/Servicio/5
+        [Authorize(Roles = "NEGOCIO")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteServicio(int id)
         {

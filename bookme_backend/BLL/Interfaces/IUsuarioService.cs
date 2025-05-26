@@ -1,6 +1,6 @@
 ﻿using bookme_backend.DataAcces.DTO;
 using bookme_backend.DataAcces.Models;
-using bookme_backend.DataAcces.Repositories.Interfaces;
+
 
 namespace bookme_backend.BLL.Interfaces
 {
@@ -15,13 +15,10 @@ namespace bookme_backend.BLL.Interfaces
         Task<Usuario?> GetByEmailAsync(string email);
         Task<LoginResultDTO> Login(string email, string password);
         Task<LoginResultDTO> RegisterAsync(RegisterDTO model);
-
-
-
         Task<(bool Success, string Message)> ResendConfirmationEmailAsync(string email);
-
         Task<(bool Success, string Message)> ForgotPasswordAsync(string email, string resetPasswordBaseUrl);
-
         Task<(bool Success, string Message)> ResetPasswordAsync(string email, string token, string newPassword);
+        Task<(bool Success, string Message, List<UsuarioReservaEstadisticaDto> Data)> GetEstadisticasUsuariosPorNegocioAsync(int negocioId);
+        Task<Dictionary<string, string>> ValidarErroresRegistroAsync(RegisterDTO model);
     }
 }

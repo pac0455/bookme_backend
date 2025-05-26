@@ -10,7 +10,8 @@ using bookme_backend.DataAcces.DTO;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using bookme_backend.BLL.Services;
 using Org.BouncyCastle.Utilities;
-using bookme_backend.BLL.Interfaces; // Cambia por el namespace correcto si tu modelo Usuario está en otro sitio
+using bookme_backend.BLL.Interfaces;
+using bookme_backend.BLL.Exceptions; // Cambia por el namespace correcto si tu modelo Usuario está en otro sitio
 
 namespace bookme_backend.UI.Controllers
 {
@@ -27,6 +28,25 @@ namespace bookme_backend.UI.Controllers
             _usuarioService = usuarioService;
         }
 
+        [HttpPost("validar-registro")]
+        public async Task<IActionResult> ValidarRegistro([FromBody] RegisterDTO model)
+        {
+            try
+            {
+                var errores = await _usuarioService.ValidarErroresRegistroAsync(model);
+                if(errores.Any())
+                    return Ok(new { Success = false, errores });
+
+                return Ok(new { Success = true,  errores });
+            }
+          
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error inesperado en ValidarRegistro");
+                return StatusCode(500, new { Success = false, Message = "Error interno del servidor." });
+            }
+        }
+
 
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDTO model)
@@ -34,12 +54,16 @@ namespace bookme_backend.UI.Controllers
             try
             {
                 var result = await _usuarioService.RegisterAsync(model);
-                return Ok(result);
+                return Ok(new { Success = true, Data = result });
+            }
+            catch (ValidationException vex)
+            {
+                return BadRequest(new { Success = false, vex.Message });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error durante el registro");
-                return StatusCode(500, ex.Message);
+                _logger.LogError(ex, "Error inesperado en Register");
+                return StatusCode(500, new { Success = false, Message = "Error interno del servidor." });
             }
         }
         [HttpPost("resend-confirmation")]
@@ -64,7 +88,12 @@ namespace bookme_backend.UI.Controllers
             {
                 var result = await _usuarioService.Login(model.Email, model.Password);
                 return Ok(result);
-            }catch(Exception ex)
+            }
+            catch (ValidationException vex)
+            {
+                return BadRequest(new { Success = false, vex });
+            }
+            catch (Exception ex)
             {
                 return StatusCode(500, ex.Message);
             }
@@ -108,6 +137,37 @@ namespace bookme_backend.UI.Controllers
             {
                 _logger.LogError(ex, "Error al obtener usuarios");
                 return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpGet("estadisticas-usuarios/{negocioId}")]
+        public async Task<IActionResult> GetEstadisticasUsuariosPorNegocio(int negocioId)
+        {
+            try
+            {
+                var (success, message, data) = await _usuarioService.GetEstadisticasUsuariosPorNegocioAsync(negocioId);
+
+                if (!success)
+                {
+                    return BadRequest(new { message });
+                }
+
+                return Ok(new
+                {
+                    Success = true,
+                    Message = message,
+                    Data = data
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error al obtener estadísticas de usuarios para negocio {negocioId}");
+                return StatusCode(500, new
+                {
+                    Success = false,
+                    Message = "Error interno al procesar la solicitud",
+                    Data = new List<UsuarioReservaEstadisticaDto>()
+                });
             }
         }
 

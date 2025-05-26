@@ -5,6 +5,8 @@ using bookme_backend.BLL.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 using bookme_backend.DataAcces.Repositories.Interfaces;
+using System.Drawing;
+using bookme_backend.DataAcces.DTO;
 
 namespace bookme_backend.UI
 {
@@ -79,6 +81,35 @@ namespace bookme_backend.UI
             }
         }
 
+        [Authorize(Roles = "NEGOCIO")]
+        [HttpPut("{id}/imagen")]
+        public async Task<IActionResult> UpdateNegocioImagen(int id, Imagen nuevaImagen)
+        {
+            if (nuevaImagen == null)
+                return BadRequest("Debe enviar una imagen.");
+
+            var (success, message, negocio) = await _negocioService.UpdateNegocioImagenAsync(id, nuevaImagen);
+
+            if (!success)
+                return BadRequest(message);
+
+            return Ok(negocio);
+        }
+
+        //[AllowAnonymous]
+        [HttpGet("{id}/imagen")]
+        public async Task<IActionResult> GetNegocioImagen(int id)
+        {
+            var (success, message, imageBytes, contentType) = await _negocioService.GetNegocioImagenAsync(id);
+
+            if (!success || imageBytes == null)
+            {
+                _logger.LogWarning($"Error al obtener imagen del negocio {id}: {message}");
+                return NotFound(message);
+            }
+
+            return File(imageBytes, contentType);
+        }
         [Authorize(Roles = "NEGOCIO")]
         [HttpPut("{id}")]
         public async Task<IActionResult> PutNegocio(int id, Negocio negocio)

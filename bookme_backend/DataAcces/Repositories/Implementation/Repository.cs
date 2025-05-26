@@ -85,6 +85,11 @@ namespace bookme_backend.DataAcces.Repositories.Implementation
 
             return await query.ToListAsync();
         }
+        public IQueryable<T> Query()
+        {
+            return _dbSet.AsQueryable();
+        }
+
 
     }
 

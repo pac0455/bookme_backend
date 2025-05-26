@@ -62,6 +62,7 @@ namespace bookme_backend
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(c =>
             {
+                c.OperationFilter<FileUploadOperationFilter>();
                 c.SwaggerDoc("v1", new() { Title = "Bookme API", Version = "v1" });
 
                 c.AddSecurityDefinition("Bearer", new()

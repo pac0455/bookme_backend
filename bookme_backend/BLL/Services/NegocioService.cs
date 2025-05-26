@@ -12,6 +12,7 @@ namespace bookme_backend.BLL.Services
         IRepository<Reserva> reservaRepo,
         IRepository<Servicio> servicioRepo,
         ILogger<NegocioService> logger
+        
     ) : INegocioService
     {
         private readonly IRepository<Negocio> _negocioRepo = negocioRepo;
@@ -129,6 +130,80 @@ namespace bookme_backend.BLL.Services
                 _logger.LogError(ex, $"Error al obtener reservas detalladas del negocio con ID {negocioId}");
                 return (false, $"Error al obtener las reservas detalladas: {ex.Message}", new List<ReservaDetalladaDto>());
             }
+        }
+        public async Task<(bool Success, string Message, Negocio? Negocio)> UpdateNegocioImagenAsync(int negocioId, Imagen imagen)
+        {
+
+            var nuevaImagen = imagen.Url;
+            if (nuevaImagen == null || nuevaImagen.Length == 0)
+                return (false, "La imagen no es válida.", null);
+
+            var negocio = await _negocioRepo.GetByIdAsync(negocioId);
+            if (negocio == null)
+                return (false, $"No se encontró el negocio con ID {negocioId}.", null);
+
+            try
+            {
+                // Eliminar imagen anterior si existe
+                if (!string.IsNullOrWhiteSpace(negocio.LogoUrl))
+                {
+                    var rutaAnterior = Path.Combine(Directory.GetCurrentDirectory(), negocio.LogoUrl.Replace("/", Path.DirectorySeparatorChar.ToString()));
+                    if (File.Exists(rutaAnterior))
+                        File.Delete(rutaAnterior);
+                }
+
+                // Guardar nueva imagen
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "uploads", "negocios");
+                if (!Directory.Exists(uploadsFolder))
+                    Directory.CreateDirectory(uploadsFolder);
+
+                var uniqueFileName = $"{Guid.NewGuid()}_{nuevaImagen.FileName}";
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await nuevaImagen.CopyToAsync(stream);
+                }
+
+                negocio.LogoUrl = Path.Combine("uploads", "negocios", uniqueFileName).Replace("\\", "/");
+
+                _negocioRepo.Update(negocio);
+                await _negocioRepo.SaveChangesAsync();
+
+                return (true, "Imagen del negocio actualizada correctamente.", negocio);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al actualizar la imagen del negocio.");
+                return (false, $"Error al actualizar la imagen del negocio: {ex.Message}", null);
+            }
+        }
+
+        public async Task<(bool Success, string Message, byte[]? ImageBytes, string ContentType)> GetNegocioImagenAsync(int negocioId)
+        {
+            var negocio = await _negocioRepo.GetByIdAsync(negocioId);
+            if (negocio == null)
+                return (false, "Negocio no encontrado.", null, "");
+
+            if (string.IsNullOrEmpty(negocio.LogoUrl))
+                return (false, "El negocio no tiene imagen asignada.", null, "");
+
+            var filePath = Path.Combine(Directory.GetCurrentDirectory(), negocio.LogoUrl.Replace("/", Path.DirectorySeparatorChar.ToString()));
+
+            if (!File.Exists(filePath))
+                return (false, "La imagen no existe en el servidor.", null, "");
+
+            var extension = Path.GetExtension(filePath).ToLowerInvariant();
+            var contentType = extension switch
+            {
+                ".png" => "image/png",
+                ".webp" => "image/webp",
+                ".jpg" or ".jpeg" => "image/jpeg",
+                _ => "application/octet-stream"
+            };
+
+            var imageBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+            return (true, "Imagen obtenida correctamente.", imageBytes, contentType);
         }
 
         public async Task<(bool Success, string Message, List<Servicio> Servicios)> GetServiciosReservadosByNegocioIdAsync(int negocioId)
