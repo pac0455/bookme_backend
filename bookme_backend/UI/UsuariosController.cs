@@ -1,17 +1,7 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using bookme_backend.DataAcces.Models;
+﻿using Microsoft.AspNetCore.Mvc;
 using bookme_backend.DataAcces.DTO;
-using Microsoft.AspNetCore.Identity.UI.Services;
-using bookme_backend.BLL.Services;
-using Org.BouncyCastle.Utilities;
 using bookme_backend.BLL.Interfaces;
-using bookme_backend.BLL.Exceptions; // Cambia por el namespace correcto si tu modelo Usuario está en otro sitio
+using bookme_backend.BLL.Exceptions;
 
 namespace bookme_backend.UI.Controllers
 {

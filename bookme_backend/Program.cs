@@ -101,6 +101,8 @@ namespace bookme_backend
             builder.Services.AddScoped<IUsuarioService, UsuarioService>();
             builder.Services.AddScoped<IHorarioService, HorarioService>();
             builder.Services.AddScoped<IServicioService, ServicioService>();
+            builder.Services.AddScoped<ICategoriaService, CategoriaService>();
+
 
 
             builder.Services.AddScoped<INegocioService, NegocioService>();

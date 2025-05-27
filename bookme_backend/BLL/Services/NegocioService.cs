@@ -33,17 +33,6 @@ namespace bookme_backend.BLL.Services
 
                 _logger.LogInformation($"Total horarios recibidos: {negocio.HorariosAtencion?.Count()}");
 
-                //foreach (var horario in negocio.HorariosAtencion)
-                //{
-                //    _logger.LogInformation($"Insertando horario: {horario.DiaSemana} - {horario.HoraInicio} - {horario.HoraFin}");
-                //    horario.Id = 0;
-                //    horario.IdNegocio = negocio.Id;
-                //    await _horarioRepo.AddAsync(horario);
-                //}
-
-
-                //await _horarioRepo.SaveChangesAsync();
-
                 var suscripcion = new Suscripcion
                 {
                     FechaSuscripcion = DateTime.Now,
@@ -131,6 +120,7 @@ namespace bookme_backend.BLL.Services
                 return (false, $"Error al obtener las reservas detalladas: {ex.Message}", new List<ReservaDetalladaDto>());
             }
         }
+
         public async Task<(bool Success, string Message, Negocio? Negocio)> UpdateNegocioImagenAsync(int negocioId, Imagen imagen)
         {
 
@@ -240,8 +230,6 @@ namespace bookme_backend.BLL.Services
             }
         }
 
-
-
         public async Task<(bool Success, string Message, List<Servicio> Servicios)> GetServiciosByNegocioIdAsync(int negocioId)
         {
             try
@@ -293,7 +281,8 @@ namespace bookme_backend.BLL.Services
 
                 var negocios = await _negocioRepo.GetWhereWithIncludesAsync(
                     n => negocioIds.Contains(n.Id),
-                    n => n.HorariosAtencion  // Incluir horarios
+                    n => n.HorariosAtencion,  // Incluir horarios,
+                    n => n.Categoria
                 );
 
 
@@ -339,7 +328,7 @@ namespace bookme_backend.BLL.Services
             if (negocioActual.Longitud != negocio.Longitud)
                 negocioActual.Longitud = negocio.Longitud;
 
-            if (!string.Equals(negocioActual.Categoria, negocio.Categoria, StringComparison.Ordinal))
+            if (!string.Equals(negocioActual.Categoria.Nombre, negocio.Categoria.Nombre, StringComparison.Ordinal))
                 negocioActual.Categoria = negocio.Categoria;
 
             _negocioRepo.Update(negocioActual);
@@ -368,6 +357,68 @@ namespace bookme_backend.BLL.Services
                 return (false, $"Error al obtener las reservas: {ex.Message}", new List<Reserva>());
             }
         }
+        public async Task<(bool Success, string Message, List<NegocioCardCliente> Negocios)> GetNegociosParaClienteAsync()
+        {
+            try
+            {
+                // Traer todos los negocios activos (puedes ajustar filtros si quieres)
+                var negocios = await _negocioRepo.GetWhereWithIncludesAsync(
+                    n => n.Activo ?? false,   // o alguna condición que tengas para filtrar negocios visibles
+                    n => n.Categoria,
+                    n => n.ResenasNegocio  // Suponiendo que tienes una colección de reseñas en Negocio
+                );
+
+                var negociosDto = negocios.Select(n => new NegocioCardCliente
+                {
+                    Id = n.Id,
+                    Nombre = n.Nombre,
+                    Descripcion = n.Descripcion,
+                    Categoria = n.Categoria?.Nombre ?? "Sin categoría",
+                    Direccion = n.Direccion,
+                    Rating = n.ResenasNegocio.Any() ? (float)n.ResenasNegocio.Average(r => r.Puntaje) : 0f,
+                    ReviewCount = n.ResenasNegocio.Count,
+                    IsActive = n.Activo ?? false,
+                    IsOpen = EstaAbierto(n.HorariosAtencion), // Método que defines tú para saber si está abierto ahora
+                    Distancia = 0, // Si quieres calcular distancia aquí o dejar que cliente la calcule
+                }).ToList();
+
+                return (true, "Negocios obtenidos correctamente", negociosDto);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener negocios para cliente");
+                return (false, $"Error al obtener negocios: {ex.Message}", new List<NegocioCardCliente>());
+            }
+        }
+
+        // Ejemplo simple de método para saber si negocio está abierto según horarios
+        private bool EstaAbierto(ICollection<Horario> horarios)
+        {
+            var diaSemanaActual = DateTime.Now.DayOfWeek.ToString(); // Ej: "Monday"
+
+            // Mapea "Monday" -> "Lunes" (porque en la DB estás usando español)
+            var diaSemanaMap = new Dictionary<string, string>
+            {
+                ["Monday"] = "Lunes",
+                ["Tuesday"] = "Martes",
+                ["Wednesday"] = "Miércoles",
+                ["Thursday"] = "Jueves",
+                ["Friday"] = "Viernes",
+                ["Saturday"] = "Sábado",
+                ["Sunday"] = "Domingo"
+            };
+
+            if (!diaSemanaMap.TryGetValue(diaSemanaActual, out var diaSemanaDb))
+                return false;
+
+            var ahora = DateTime.Now.TimeOfDay;
+
+            return negocio.HorariosAtencion
+                .Where(h => h.DiaSemana.Equals(diaSemanaDb, StringComparison.OrdinalIgnoreCase))
+                .Any(h => ahora >= h.HoraInicio && ahora <= h.HoraFin);
+        }
+
+
 
     }
 }

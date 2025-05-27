@@ -318,7 +318,7 @@ namespace bookme_backend.Services
                         DuracionMinutos = s.DuracionMinutos ?? 0,
                         Precio = s.Precio ?? 0,
                         NegocioNombre = s.Negocio?.Nombre ?? string.Empty,
-                        Categoria = s.Negocio?.Categoria ?? "Sin categoría",
+                        Categoria = s.Negocio?.Categoria?.Nombre ?? "Sin categoría",
                         ValoracionPromedio = valoraciones.Any() ? valoraciones.Average(v => v.Puntuacion ?? 0) : 0,
                         NumeroValoraciones = valoraciones.Count,
                         NumeroReservas = reservas.Count

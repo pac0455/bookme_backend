@@ -25,14 +25,15 @@ namespace bookme_backend.UI
             _logger = logger;
             _repository = repository;
         }
-        [Authorize(Roles = "NEGOCIO")]
+ 
+
+
         // GET: api/Negocio
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Negocio>>> GetNegocios()
         {
             return await _context.Negocios.Include(x => x.HorariosAtencion).ToListAsync();
         }
-        [Authorize(Roles = "NEGOCIO")]
         [HttpGet("{id}")]
         public async Task<ActionResult<Negocio>> GetNegocio(int id)
         {
@@ -96,7 +97,7 @@ namespace bookme_backend.UI
             return Ok(negocio);
         }
 
-        //[AllowAnonymous]
+
         [HttpGet("{id}/imagen")]
         public async Task<IActionResult> GetNegocioImagen(int id)
         {
@@ -213,7 +214,7 @@ namespace bookme_backend.UI
 
             return Ok(reservas);
         }
-        [Authorize(Roles = "NEGOCIO")]
+
         [HttpGet("{id}/reservas/detalladas")]
         public async Task<IActionResult> GetReservasDetalladas(int id)
         {
@@ -228,7 +229,7 @@ namespace bookme_backend.UI
             return Ok(reservas);
         }
 
-        [Authorize(Roles = "NEGOCIO")]
+
         [HttpGet("{id}/servicios")]
         public async Task<IActionResult> GetServiciosByNegocioId(int id)
         {

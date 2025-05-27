@@ -27,16 +27,16 @@ public partial class Negocio
     [Column("logo")]
     [StringLength(255)]
     public string? LogoUrl { get; set; }
-
     [Column("latitud"), Required]
     public double? Latitud { get; set; }
-
     [Column("longitud"), Required]
     public double? Longitud { get; set; }
-
     [Column("categoria"), Required]
-    [StringLength(255)]
-    public string? Categoria { get; set; }
+    public int CategoriaId { get; set; }
+    [JsonIgnore]
+
+    [ForeignKey("CategoriaId")] public virtual
+    Categoria Categoria { get; set; } = null!;
     [Column("activo")]
     public bool? Activo { get; set; }
 
@@ -52,4 +52,7 @@ public partial class Negocio
     [JsonIgnore]
     [InverseProperty("IdNegocioNavigation")]
     public virtual ICollection<Suscripcion> Suscripciones { get; set; } = new List<Suscripcion>();
+    [JsonIgnore]
+    [InverseProperty("Negocio")]
+    public virtual ICollection<ValoracionNegocio> ResenasNegocio { get; set; } = new List<ValoracionNegocio>();
 }

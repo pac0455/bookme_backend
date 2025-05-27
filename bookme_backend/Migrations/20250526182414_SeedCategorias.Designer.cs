@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using bookme_backend.DataAcces.Models;
 
@@ -11,9 +12,11 @@ using bookme_backend.DataAcces.Models;
 namespace bookme_backend.Migrations
 {
     [DbContext(typeof(BookmeContext))]
-    partial class BookmeContextModelSnapshot : ModelSnapshot
+    [Migration("20250526182414_SeedCategorias")]
+    partial class SeedCategorias
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

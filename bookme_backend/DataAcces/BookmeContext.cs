@@ -68,10 +68,27 @@ public partial class BookmeContext : IdentityDbContext<Usuario>
             .WithMany(n => n.HorariosAtencion)
             .HasForeignKey(h => h.IdNegocio)
             .OnDelete(DeleteBehavior.Cascade);
+        //Seed para añadir categorias por defecto
+        modelBuilder.Entity<Categoria>().HasData(
+            new Categoria { Id = 1, Nombre = "Sin categoría" },
+            new Categoria { Id = 2, Nombre = "Gimnasio" },
+            new Categoria { Id = 3, Nombre = "Salón de belleza" },
+            new Categoria { Id = 4, Nombre = "Barbería" },
+            new Categoria { Id = 5, Nombre = "Clínica dental" },
+            new Categoria { Id = 6, Nombre = "Spa" },
+            new Categoria { Id = 7, Nombre = "Fisioterapia" },
+            new Categoria { Id = 8, Nombre = "Psicología" },
+            new Categoria { Id = 9, Nombre = "Nutrición" },
+            new Categoria { Id = 10, Nombre = "Entrenador personal" },
+            new Categoria { Id = 11, Nombre = "Veterinaria" },
+            new Categoria { Id = 12, Nombre = "Tatuajes" }
+        );
+
 
     }
 
-    public DbSet<bookme_backend.DataAcces.Models.Horario> Horarios { get; set; } = default!;
+    public DbSet<Horario> Horarios { get; set; } = default!;
+    public DbSet<Categoria> Categorias { get; set; }
 
 
 }
