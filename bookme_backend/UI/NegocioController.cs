@@ -48,7 +48,6 @@ namespace bookme_backend.UI
 
             return negocio;
         }
-
         [Authorize(Roles = "NEGOCIO")]
         [HttpGet("ByUserId")]
         public async Task<ActionResult<IEnumerable<Negocio>>> GetNegiciosByUserID()
@@ -243,7 +242,18 @@ namespace bookme_backend.UI
 
             return Ok(servicios);
         }
+        [HttpPost("cliente/negocios")]
+        public async Task<IActionResult> GetNegociosParaClienteAsync(Ubicacion? ubicacion)
+        {
+            var (success, message, negocios) = await _negocioService.GetNegociosParaClienteAsync(ubicacion);
 
+            if (!success)
+            {
+                _logger.LogError($"Error al obtener los negocios: {message}");
+                return BadRequest(message);
+            }
 
+            return Ok(negocios);
+        }
     }
 }

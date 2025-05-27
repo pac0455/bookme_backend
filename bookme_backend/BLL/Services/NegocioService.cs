@@ -1,8 +1,11 @@
-﻿using bookme_backend.BLL.Interfaces;
+﻿using System.Net.Http;
+using System.Text.Json;
+using bookme_backend.BLL.Interfaces;
 using bookme_backend.DataAcces.DTO;
 using bookme_backend.DataAcces.Models;
 using bookme_backend.DataAcces.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace bookme_backend.BLL.Services
 {
@@ -11,15 +14,20 @@ namespace bookme_backend.BLL.Services
         IRepository<Suscripcion> subcripcionesRepo,
         IRepository<Reserva> reservaRepo,
         IRepository<Servicio> servicioRepo,
-        ILogger<NegocioService> logger
-        
+        ILogger<NegocioService> logger,
+        IOptions<GoogleMapsSettings> googleMapsOptions,
+        HttpClient httpClient
+
+
     ) : INegocioService
     {
         private readonly IRepository<Negocio> _negocioRepo = negocioRepo;
+        private readonly HttpClient _httpClient= httpClient;
         private readonly IRepository<Suscripcion> _subcripcionesRepo = subcripcionesRepo;
         private readonly IRepository<Reserva> _reservaRepo = reservaRepo;
         private readonly IRepository<Servicio> _servicioRepo = servicioRepo;
         private readonly ILogger<NegocioService> _logger = logger;
+        private readonly GoogleMapsSettings _googleMapsSettings = googleMapsOptions.Value;
 
 
 
@@ -357,30 +365,44 @@ namespace bookme_backend.BLL.Services
                 return (false, $"Error al obtener las reservas: {ex.Message}", new List<Reserva>());
             }
         }
-        public async Task<(bool Success, string Message, List<NegocioCardCliente> Negocios)> GetNegociosParaClienteAsync()
+        public async Task<(bool Success, string Message, List<NegocioCardCliente> Negocios)> GetNegociosParaClienteAsync(Ubicacion? ubicacionUser)
         {
             try
             {
-                // Traer todos los negocios activos (puedes ajustar filtros si quieres)
+                // Obtener todos los negocios activos con categoría y valoraciones
                 var negocios = await _negocioRepo.GetWhereWithIncludesAsync(
-                    n => n.Activo ?? false,   // o alguna condición que tengas para filtrar negocios visibles
+                    n => n.Activo ?? false,
                     n => n.Categoria,
-                    n => n.ResenasNegocio  // Suponiendo que tienes una colección de reseñas en Negocio
+                    n => n.ResenasNegocio
                 );
+                var negociosDto = new List<NegocioCardCliente>();
 
-                var negociosDto = negocios.Select(n => new NegocioCardCliente
+                // Proyectar a DTO incluyendo cálculo de distancia si la ubicación del usuario existe
+                foreach (var n in negocios)
                 {
-                    Id = n.Id,
-                    Nombre = n.Nombre,
-                    Descripcion = n.Descripcion,
-                    Categoria = n.Categoria?.Nombre ?? "Sin categoría",
-                    Direccion = n.Direccion,
-                    Rating = n.ResenasNegocio.Any() ? (float)n.ResenasNegocio.Average(r => r.Puntaje) : 0f,
-                    ReviewCount = n.ResenasNegocio.Count,
-                    IsActive = n.Activo ?? false,
-                    IsOpen = EstaAbierto(n.HorariosAtencion), // Método que defines tú para saber si está abierto ahora
-                    Distancia = 0, // Si quieres calcular distancia aquí o dejar que cliente la calcule
-                }).ToList();
+                    var distancia = await CalcularDistanciaConGoogleAsync(
+                        ubicacionUser,
+                        new Ubicacion { Latitud = n.Latitud, Longitud = n.Longitud }
+                    );
+                    negociosDto.Add(new NegocioCardCliente
+                    {
+                        Id = n.Id,
+                        Nombre = n.Nombre,
+                        Descripcion = n.Descripcion,
+                        Categoria = n.Categoria?.Nombre ?? "Sin categoría",
+                        Direccion = n.Direccion,
+                        Rating = n.ResenasNegocio.Any() ? (float)n.ResenasNegocio.Average(r => r.Puntuacion) : 0f,
+                        ReviewCount = n.ResenasNegocio.Count,
+                        IsActive = n.Activo ?? false,
+                        IsOpen = EstaAbierto(n.HorariosAtencion),
+                        Distancia = distancia,
+                        Latitud = n.Latitud,
+                        Longitud = n.Longitud
+                    });
+
+                }
+
+
 
                 return (true, "Negocios obtenidos correctamente", negociosDto);
             }
@@ -390,6 +412,35 @@ namespace bookme_backend.BLL.Services
                 return (false, $"Error al obtener negocios: {ex.Message}", new List<NegocioCardCliente>());
             }
         }
+        public async Task<double?> CalcularDistanciaConGoogleAsync(Ubicacion origen, Ubicacion destino)
+        {
+            if (origen?.Latitud == null || origen?.Longitud == null ||
+                destino?.Latitud == null || destino?.Longitud == null)
+                return null;
+
+            string url = $"https://maps.googleapis.com/maps/api/distancematrix/json" +
+                $"?origins={origen.Latitud},{origen.Longitud}" +
+                $"&destinations={destino.Latitud},{destino.Longitud}" +
+                $"&mode=driving" +
+                $"&key={_googleMapsSettings.ApiKey}";
+
+            var response = await _httpClient.GetAsync(url);
+            if (!response.IsSuccessStatusCode) return null;
+
+            var json = await response.Content.ReadAsStringAsync();
+            var root = JsonDocument.Parse(json).RootElement;
+
+            var status = root.GetProperty("status").GetString();
+            if (status != "OK") return null;
+
+            var element = root.GetProperty("rows")[0].GetProperty("elements")[0];
+            if (element.GetProperty("status").GetString() != "OK") return null;
+
+            int metros = element.GetProperty("distance").GetProperty("value").GetInt32();
+            return Math.Round(metros / 1000.0, 2); // en kilómetros
+        }
+
+
 
         // Ejemplo simple de método para saber si negocio está abierto según horarios
         private bool EstaAbierto(ICollection<Horario> horarios)
@@ -413,7 +464,7 @@ namespace bookme_backend.BLL.Services
 
             var ahora = DateTime.Now.TimeOfDay;
 
-            return negocio.HorariosAtencion
+            return horarios
                 .Where(h => h.DiaSemana.Equals(diaSemanaDb, StringComparison.OrdinalIgnoreCase))
                 .Any(h => ahora >= h.HoraInicio && ahora <= h.HoraFin);
         }

@@ -220,62 +220,127 @@ namespace bookme_backend.Migrations
                         new
                         {
                             Id = 1,
-                            Nombre = "Sin categoría"
+                            Nombre = "Clínica"
                         },
                         new
                         {
                             Id = 2,
-                            Nombre = "Gimnasio"
+                            Nombre = "Tienda"
                         },
                         new
                         {
                             Id = 3,
-                            Nombre = "Salón de belleza"
+                            Nombre = "Gimnasio"
                         },
                         new
                         {
                             Id = 4,
-                            Nombre = "Barbería"
+                            Nombre = "Salón de Belleza"
                         },
                         new
                         {
                             Id = 5,
-                            Nombre = "Clínica dental"
-                        },
-                        new
-                        {
-                            Id = 6,
-                            Nombre = "Spa"
-                        },
-                        new
-                        {
-                            Id = 7,
-                            Nombre = "Fisioterapia"
-                        },
-                        new
-                        {
-                            Id = 8,
-                            Nombre = "Psicología"
-                        },
-                        new
-                        {
-                            Id = 9,
-                            Nombre = "Nutrición"
-                        },
-                        new
-                        {
-                            Id = 10,
-                            Nombre = "Entrenador personal"
-                        },
-                        new
-                        {
-                            Id = 11,
                             Nombre = "Veterinaria"
                         },
                         new
                         {
+                            Id = 6,
+                            Nombre = "Restaurante"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            Nombre = "Cafetería"
+                        },
+                        new
+                        {
+                            Id = 8,
+                            Nombre = "Barbería"
+                        },
+                        new
+                        {
+                            Id = 9,
+                            Nombre = "Psicología"
+                        },
+                        new
+                        {
+                            Id = 10,
+                            Nombre = "Nutrición"
+                        },
+                        new
+                        {
+                            Id = 11,
+                            Nombre = "Fisioterapia"
+                        },
+                        new
+                        {
                             Id = 12,
-                            Nombre = "Tatuajes"
+                            Nombre = "Podología"
+                        },
+                        new
+                        {
+                            Id = 13,
+                            Nombre = "Asesoría"
+                        },
+                        new
+                        {
+                            Id = 14,
+                            Nombre = "Consultoría"
+                        },
+                        new
+                        {
+                            Id = 15,
+                            Nombre = "Servicios Jurídicos"
+                        },
+                        new
+                        {
+                            Id = 16,
+                            Nombre = "Clases Particulares"
+                        },
+                        new
+                        {
+                            Id = 17,
+                            Nombre = "Academia de Idiomas"
+                        },
+                        new
+                        {
+                            Id = 18,
+                            Nombre = "Tatuajes y Piercings"
+                        },
+                        new
+                        {
+                            Id = 19,
+                            Nombre = "Centro Estético"
+                        },
+                        new
+                        {
+                            Id = 20,
+                            Nombre = "Terapias Alternativas"
+                        },
+                        new
+                        {
+                            Id = 21,
+                            Nombre = "Cuidado de Mascotas"
+                        },
+                        new
+                        {
+                            Id = 22,
+                            Nombre = "Mecánica"
+                        },
+                        new
+                        {
+                            Id = 23,
+                            Nombre = "Electricista"
+                        },
+                        new
+                        {
+                            Id = 24,
+                            Nombre = "Fontanero"
+                        },
+                        new
+                        {
+                            Id = 25,
+                            Nombre = "Fotografía"
                         });
                 });
 
@@ -630,7 +695,7 @@ namespace bookme_backend.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("bookme_backend.DataAcces.Models.Valoracione", b =>
+            modelBuilder.Entity("bookme_backend.DataAcces.Models.Valoracion", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -667,6 +732,45 @@ namespace bookme_backend.Migrations
                     b.HasIndex("UsuarioId");
 
                     b.ToTable("valoraciones");
+                });
+
+            modelBuilder.Entity("bookme_backend.DataAcces.Models.ValoracionNegocio", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Comentario")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("comentario");
+
+                    b.Property<DateTime>("FechaValoracion")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("fecha_valoracion");
+
+                    b.Property<int>("NegocioId")
+                        .HasColumnType("int")
+                        .HasColumnName("negocio_id");
+
+                    b.Property<int>("Puntuacion")
+                        .HasColumnType("int")
+                        .HasColumnName("puntuacion");
+
+                    b.Property<string>("UsuarioId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)")
+                        .HasColumnName("usuario_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NegocioId");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("valoraciones_negocio");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -821,7 +925,7 @@ namespace bookme_backend.Migrations
                     b.Navigation("IdUsuarioNavigation");
                 });
 
-            modelBuilder.Entity("bookme_backend.DataAcces.Models.Valoracione", b =>
+            modelBuilder.Entity("bookme_backend.DataAcces.Models.Valoracion", b =>
                 {
                     b.HasOne("bookme_backend.DataAcces.Models.Reserva", "Reserva")
                         .WithMany("Valoraciones")
@@ -840,6 +944,25 @@ namespace bookme_backend.Migrations
                     b.Navigation("Usuario");
                 });
 
+            modelBuilder.Entity("bookme_backend.DataAcces.Models.ValoracionNegocio", b =>
+                {
+                    b.HasOne("bookme_backend.DataAcces.Models.Negocio", "Negocio")
+                        .WithMany("ResenasNegocio")
+                        .HasForeignKey("NegocioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("bookme_backend.DataAcces.Models.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Negocio");
+
+                    b.Navigation("Usuario");
+                });
+
             modelBuilder.Entity("Servicio", b =>
                 {
                     b.Navigation("ReservasServicios");
@@ -853,6 +976,8 @@ namespace bookme_backend.Migrations
             modelBuilder.Entity("bookme_backend.DataAcces.Models.Negocio", b =>
                 {
                     b.Navigation("HorariosAtencion");
+
+                    b.Navigation("ResenasNegocio");
 
                     b.Navigation("Reservas");
 

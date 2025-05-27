@@ -11,6 +11,9 @@
         public int ReviewCount { get; set; }
         public bool IsActive { get; set; }
         public bool IsOpen { get; set; }
-        public int Distancia { get; set; }  // Si la calculas en backend o desde el cliente, esto es opcional
+
+        public double? Distancia { get; set; } // en kilómetros y andando
+        public double? Latitud { get; set; }
+        public double? Longitud { get; set; }
     }
 }

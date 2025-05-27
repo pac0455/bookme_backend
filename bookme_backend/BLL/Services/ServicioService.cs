@@ -288,87 +288,53 @@ namespace bookme_backend.Services
         {
             try
             {
-                // Validar si el negocio existe
-                var negocioExiste = await _negocioRepo.Exist(n => n.Id == negocioId);
-                if (!negocioExiste)
+                // Obtener negocio con categoría y valoraciones (usando método existente)
+                var negocios = await _negocioRepo.GetWhereWithIncludesAsync(
+                    n => n.Id == negocioId,
+                    n => n.Categoria,
+                    n => n.ResenasNegocio
+                );
+
+                var negocio = negocios.FirstOrDefault();
+
+                if (negocio == null)
                     return (false, $"El negocio con ID {negocioId} no existe.", new List<ServicioDetalleDto>());
 
-                // Cargar servicios filtrando por negocio, e incluir entidades relacionadas con Include para evitar múltiples consultas
+                // Calcular promedio y total de valoraciones del negocio
+                var valoraciones = negocio.ResenasNegocio.ToList();
+                double promedio = valoraciones.Any() ? valoraciones.Average(v => v.Puntuacion) : 0.0;
+                int totalValoraciones = valoraciones.Count;
+
+                // Obtener servicios del negocio (usando método con include existente)
                 var servicios = await _servicioRepo.GetWhereAsync(
-                     s => s.NegocioId == negocioId,
-                     query => query.AsNoTracking()
-                 );
+                    s => s.NegocioId == negocioId,
+                    query => query
+                        .Include(s => s.ReservasServicios)
+                        .Include(s => s.Negocio)
+                            .ThenInclude(n => n.Categoria)
+                        .AsNoTracking()
+                );
 
-                var detalles = servicios.Select(s =>
-                {
-                    var reservas = s.ReservasServicios
-                        .Select(rs => rs.Reserva)
-                        .Where(r => r != null)
-                        .ToList();
-
-                    var valoraciones = reservas
-                        .SelectMany(r => r.Valoraciones)
-                        .ToList();
-                    return new ServicioDetalleDto
-                    {
-                        Id = s.Id,
-                        NegocioId = s.NegocioId,
-                        Nombre = s.Nombre ?? string.Empty,
-                        Descripcion = s.Descripcion ?? string.Empty,
-                        DuracionMinutos = s.DuracionMinutos ?? 0,
-                        Precio = s.Precio ?? 0,
-                        NegocioNombre = s.Negocio?.Nombre ?? string.Empty,
-                        Categoria = s.Negocio?.Categoria?.Nombre ?? "Sin categoría",
-                        ValoracionPromedio = valoraciones.Any() ? valoraciones.Average(v => v.Puntuacion ?? 0) : 0,
-                        NumeroValoraciones = valoraciones.Count,
-                        NumeroReservas = reservas.Count
-                    };
-
-                }).ToList();
-
-
-
-                // Validar que existan servicios para el negocio
                 if (servicios == null || servicios.Count == 0)
                     return (true, $"No se encontraron servicios para el negocio con ID {negocioId}.", new List<ServicioDetalleDto>());
 
-                // Proyectamos los servicios a DTO con cálculos de valoraciones y reservas
-                var serviciosDetalles = servicios.Select(s =>
+                // Proyectar a DTO
+                var detalles = servicios.Select(s => new ServicioDetalleDto
                 {
-                    // Extraemos las reservas que tiene el servicio, filtrando nulos por seguridad
-                    var reservas = s.ReservasServicios.Select(rs => rs.Reserva).Where(r => r != null).ToList();
-
-                    // De todas las reservas, extraemos las valoraciones asociadas
-                    var valoraciones = reservas.SelectMany(r => r.Valoraciones).ToList();
-
-                    // Calculamos la valoración promedio, si hay valoraciones; si no, asignamos 0.0
-                    double valoracionPromedio = valoraciones.Any()
-                        ? valoraciones.Average(v => v.Puntuacion ?? 0)
-                        : 0.0;
-
-                    // Número total de valoraciones
-                    int numeroValoraciones = valoraciones.Count;
-
-                    // Número total de reservas del servicio
-                    int numeroReservas = reservas.Count;
-
-                    return new ServicioDetalleDto
-                    {
-                        Id = s.Id,
-                        NegocioId = s.NegocioId,
-                        Nombre = s.Nombre,
-                        Descripcion = s.Descripcion,
-                        DuracionMinutos = s.DuracionMinutos,
-                        Precio = s.Precio,
-                        NegocioNombre = s.Negocio?.Nombre ?? "",
-                        Categoria = "Sin categoría",
-                        ValoracionPromedio = valoracionPromedio,
-                        NumeroValoraciones = numeroValoraciones,
-                        NumeroReservas = numeroReservas
-                    };
+                    Id = s.Id,
+                    NegocioId = s.NegocioId,
+                    Nombre = s.Nombre ?? string.Empty,
+                    Descripcion = s.Descripcion ?? string.Empty,
+                    DuracionMinutos = s.DuracionMinutos ?? 0,
+                    Precio = s.Precio ?? 0,
+                    NegocioNombre = negocio.Nombre ?? string.Empty,
+                    Categoria = negocio.Categoria?.Nombre ?? "Sin categoría",
+                    ValoracionPromedio = promedio,
+                    NumeroValoraciones = totalValoraciones,
+                    NumeroReservas = s.ReservasServicios?.Count ?? 0
                 }).ToList();
 
-                return (true, "Servicios detallados obtenidos correctamente.", serviciosDetalles);
+                return (true, "Servicios detallados obtenidos correctamente.", detalles);
             }
             catch (Exception ex)
             {
@@ -376,6 +342,7 @@ namespace bookme_backend.Services
                 return (false, $"Error al obtener servicios detallados: {ex.Message}", new List<ServicioDetalleDto>());
             }
         }
+
         /// <summary>
         /// Elimina un servicio dado su ID.
         /// </summary>

@@ -52,23 +52,16 @@ namespace bookme_backend.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "negocios",
+                name: "categoria",
                 columns: table => new
                 {
                     id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    nombre = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    descripcion = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    direccion = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    logo = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    latitud = table.Column<double>(type: "float", nullable: false),
-                    longitud = table.Column<double>(type: "float", nullable: false),
-                    categoria = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    activo = table.Column<bool>(type: "bit", nullable: true)
+                    categoria = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_negocios", x => x.id);
+                    table.PrimaryKey("PK_categoria", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
@@ -178,6 +171,32 @@ namespace bookme_backend.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "negocios",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    nombre = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    descripcion = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    direccion = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    logo = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    latitud = table.Column<double>(type: "float", nullable: false),
+                    longitud = table.Column<double>(type: "float", nullable: false),
+                    categoria = table.Column<int>(type: "int", nullable: false),
+                    activo = table.Column<bool>(type: "bit", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_negocios", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_negocios_categoria_categoria",
+                        column: x => x.categoria,
+                        principalTable: "categoria",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "horarios",
                 columns: table => new
                 {
@@ -278,6 +297,35 @@ namespace bookme_backend.Migrations
                     table.ForeignKey(
                         name: "FK_suscripciones_negocios_id_negocio",
                         column: x => x.id_negocio,
+                        principalTable: "negocios",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "valoraciones_negocio",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    negocio_id = table.Column<int>(type: "int", nullable: false),
+                    usuario_id = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    puntuacion = table.Column<int>(type: "int", nullable: false),
+                    comentario = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    fecha_valoracion = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_valoraciones_negocio", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_valoraciones_negocio_AspNetUsers_usuario_id",
+                        column: x => x.usuario_id,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_valoraciones_negocio_negocios_negocio_id",
+                        column: x => x.negocio_id,
                         principalTable: "negocios",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
@@ -426,6 +474,11 @@ namespace bookme_backend.Migrations
                 column: "id_negocio");
 
             migrationBuilder.CreateIndex(
+                name: "IX_negocios_categoria",
+                table: "negocios",
+                column: "categoria");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_negocios_nombre",
                 table: "negocios",
                 column: "nombre",
@@ -480,6 +533,16 @@ namespace bookme_backend.Migrations
                 name: "IX_valoraciones_usuario_id",
                 table: "valoraciones",
                 column: "usuario_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_valoraciones_negocio_negocio_id",
+                table: "valoraciones_negocio",
+                column: "negocio_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_valoraciones_negocio_usuario_id",
+                table: "valoraciones_negocio",
+                column: "usuario_id");
         }
 
         /// <inheritdoc />
@@ -516,6 +579,9 @@ namespace bookme_backend.Migrations
                 name: "valoraciones");
 
             migrationBuilder.DropTable(
+                name: "valoraciones_negocio");
+
+            migrationBuilder.DropTable(
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
@@ -529,6 +595,9 @@ namespace bookme_backend.Migrations
 
             migrationBuilder.DropTable(
                 name: "negocios");
+
+            migrationBuilder.DropTable(
+                name: "categoria");
         }
     }
 }

@@ -30,7 +30,7 @@ namespace bookme_backend.BLL.Services
         IRepository<Suscripcion> repoSubcription,
         IRepository<Reserva> repoReserva,
         IRepository<Pago> repoPagos,
-        IRepository<Valoracione> repoValoracion,
+        IRepository<Valoracion> repoValoracion,
         IRepository<Servicio> repoServicio,
         IRepository<ReservasServicio> repoReservaServicio,
         IRepository<Negocio> repoNegocio
@@ -46,7 +46,7 @@ namespace bookme_backend.BLL.Services
         private readonly IRepository<Suscripcion> _repoSubcription = repoSubcription;
         private readonly IRepository<Reserva> _repoReserva = repoReserva;
         private readonly IRepository<Pago> _repoPagos = repoPagos;
-        private readonly IRepository<Valoracione> _repoValoracion = repoValoracion;
+        private readonly IRepository<Valoracion> _repoValoracion = repoValoracion;
         private readonly IRepository<Servicio> _repoServicio = repoServicio;
         private readonly IRepository<ReservasServicio> _repoReservaServicio = repoReservaServicio;
         private readonly IRepository<Negocio> _repoNegocio = repoNegocio; 

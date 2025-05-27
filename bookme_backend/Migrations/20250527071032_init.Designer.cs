@@ -12,7 +12,7 @@ using bookme_backend.DataAcces.Models;
 namespace bookme_backend.Migrations
 {
     [DbContext(typeof(BookmeContext))]
-    [Migration("20250526071040_init")]
+    [Migration("20250527071032_init")]
     partial class init
     {
         /// <inheritdoc />
@@ -200,6 +200,26 @@ namespace bookme_backend.Migrations
                     b.ToTable("servicios");
                 });
 
+            modelBuilder.Entity("bookme_backend.DataAcces.Models.Categoria", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("categoria");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("categoria");
+                });
+
             modelBuilder.Entity("bookme_backend.DataAcces.Models.Horario", b =>
                 {
                     b.Property<int>("Id")
@@ -248,10 +268,8 @@ namespace bookme_backend.Migrations
                         .HasColumnType("bit")
                         .HasColumnName("activo");
 
-                    b.Property<string>("Categoria")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
+                    b.Property<int>("CategoriaId")
+                        .HasColumnType("int")
                         .HasColumnName("categoria");
 
                     b.Property<string>("Descripcion")
@@ -286,6 +304,8 @@ namespace bookme_backend.Migrations
                         .HasColumnName("nombre");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CategoriaId");
 
                     b.HasIndex("Nombre")
                         .IsUnique();
@@ -551,7 +571,7 @@ namespace bookme_backend.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("bookme_backend.DataAcces.Models.Valoracione", b =>
+            modelBuilder.Entity("bookme_backend.DataAcces.Models.Valoracion", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -588,6 +608,45 @@ namespace bookme_backend.Migrations
                     b.HasIndex("UsuarioId");
 
                     b.ToTable("valoraciones");
+                });
+
+            modelBuilder.Entity("bookme_backend.DataAcces.Models.ValoracionNegocio", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Comentario")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("comentario");
+
+                    b.Property<DateTime>("FechaValoracion")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("fecha_valoracion");
+
+                    b.Property<int>("NegocioId")
+                        .HasColumnType("int")
+                        .HasColumnName("negocio_id");
+
+                    b.Property<int>("Puntuacion")
+                        .HasColumnType("int")
+                        .HasColumnName("puntuacion");
+
+                    b.Property<string>("UsuarioId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)")
+                        .HasColumnName("usuario_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NegocioId");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("valoraciones_negocio");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -663,6 +722,17 @@ namespace bookme_backend.Migrations
                     b.Navigation("Negocio");
                 });
 
+            modelBuilder.Entity("bookme_backend.DataAcces.Models.Negocio", b =>
+                {
+                    b.HasOne("bookme_backend.DataAcces.Models.Categoria", "Categoria")
+                        .WithMany("Negocios")
+                        .HasForeignKey("CategoriaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Categoria");
+                });
+
             modelBuilder.Entity("bookme_backend.DataAcces.Models.Pago", b =>
                 {
                     b.HasOne("bookme_backend.DataAcces.Models.Reserva", "Reserva")
@@ -731,7 +801,7 @@ namespace bookme_backend.Migrations
                     b.Navigation("IdUsuarioNavigation");
                 });
 
-            modelBuilder.Entity("bookme_backend.DataAcces.Models.Valoracione", b =>
+            modelBuilder.Entity("bookme_backend.DataAcces.Models.Valoracion", b =>
                 {
                     b.HasOne("bookme_backend.DataAcces.Models.Reserva", "Reserva")
                         .WithMany("Valoraciones")
@@ -750,14 +820,40 @@ namespace bookme_backend.Migrations
                     b.Navigation("Usuario");
                 });
 
+            modelBuilder.Entity("bookme_backend.DataAcces.Models.ValoracionNegocio", b =>
+                {
+                    b.HasOne("bookme_backend.DataAcces.Models.Negocio", "Negocio")
+                        .WithMany("ResenasNegocio")
+                        .HasForeignKey("NegocioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("bookme_backend.DataAcces.Models.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Negocio");
+
+                    b.Navigation("Usuario");
+                });
+
             modelBuilder.Entity("Servicio", b =>
                 {
                     b.Navigation("ReservasServicios");
                 });
 
+            modelBuilder.Entity("bookme_backend.DataAcces.Models.Categoria", b =>
+                {
+                    b.Navigation("Negocios");
+                });
+
             modelBuilder.Entity("bookme_backend.DataAcces.Models.Negocio", b =>
                 {
                     b.Navigation("HorariosAtencion");
+
+                    b.Navigation("ResenasNegocio");
 
                     b.Navigation("Reservas");
 

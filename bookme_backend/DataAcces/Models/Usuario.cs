@@ -23,5 +23,5 @@ public partial class Usuario:  IdentityUser
     public virtual ICollection<Suscripcion> Suscripciones { get; set; } = new List<Suscripcion>();
 
     [InverseProperty("Usuario")]
-    public virtual ICollection<Valoracione> Valoraciones { get; set; } = new List<Valoracione>();
+    public virtual ICollection<Valoracion> Valoraciones { get; set; } = new List<Valoracion>();
 }

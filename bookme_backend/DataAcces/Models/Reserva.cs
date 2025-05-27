@@ -57,5 +57,5 @@ public partial class Reserva
     public virtual Usuario Usuario { get; set; } = null!;
 
     [InverseProperty("Reserva")]
-    public virtual ICollection<Valoracione> Valoraciones { get; set; } = new List<Valoracione>();
+    public virtual ICollection<Valoracion> Valoraciones { get; set; } = new List<Valoracion>();
 }

@@ -14,7 +14,7 @@ public class ValoracionNegocio
     public int NegocioId { get; set; }
 
     [Column("usuario_id")]
-    public int UsuarioId { get; set; }
+    public string UsuarioId { get; set; } = null!;
 
     [Column("puntuacion")]
     public int Puntuacion { get; set; }

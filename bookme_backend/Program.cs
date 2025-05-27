@@ -16,6 +16,7 @@ using Microsoft.IdentityModel.Tokens;
 using bookme_backend.UI;
 using bookme_backend.Services;
 using Microsoft.Extensions.FileProviders;
+using bookme_backend.DataAcces.DTO;
 
 namespace bookme_backend
 {
@@ -91,6 +92,11 @@ namespace bookme_backend
                 });
 
             });
+
+            //APi key
+            builder.Services.Configure<GoogleMapsSettings>(builder.Configuration.GetSection("GoogleMaps"));
+            builder.Services.AddHttpClient<NegocioService>();
+
 
 
             // Registrar servicios

@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace bookme_backend.DataAcces.Models;
 
 [Table("valoraciones")]
-public partial class Valoracione
+public partial class Valoracion
 {
     [Key]
     [Column("id")]
