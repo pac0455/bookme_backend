@@ -381,12 +381,11 @@ namespace bookme_backend.BLL.Services
                 // Proyectar a DTO incluyendo cálculo de distancia si la ubicación del usuario existe
                 foreach (var n in negocios)
                 {
-                    //Comentado porque quiero evitar llamadas a Google Maps por ahora   
                     //var distancia = await CalcularDistanciaConGoogleAsync(
                     //    ubicacionUser,
                     //    new Ubicacion { Latitud = n.Latitud, Longitud = n.Longitud }
                     //);
-                    var distancia = 0.0;
+                    var distancia = new Random().NextDouble();
                     negociosDto.Add(new NegocioCardCliente
                     {
                         Id = n.Id,
