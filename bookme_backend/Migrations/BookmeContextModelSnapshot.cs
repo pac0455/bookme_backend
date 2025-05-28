@@ -194,7 +194,7 @@ namespace bookme_backend.Migrations
 
                     b.HasIndex("NegocioId");
 
-                    b.ToTable("servicios");
+                    b.ToTable("servicios", (string)null);
                 });
 
             modelBuilder.Entity("bookme_backend.DataAcces.Models.Categoria", b =>
@@ -214,7 +214,7 @@ namespace bookme_backend.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("categoria");
+                    b.ToTable("categoria", (string)null);
 
                     b.HasData(
                         new
@@ -374,7 +374,7 @@ namespace bookme_backend.Migrations
 
                     b.HasIndex("IdNegocio");
 
-                    b.ToTable("horarios");
+                    b.ToTable("horarios", (string)null);
 
                     b.HasAnnotation("Relational:JsonPropertyName", "horarioAtencion");
                 });
@@ -434,7 +434,7 @@ namespace bookme_backend.Migrations
                     b.HasIndex("Nombre")
                         .IsUnique();
 
-                    b.ToTable("negocios");
+                    b.ToTable("negocios", (string)null);
                 });
 
             modelBuilder.Entity("bookme_backend.DataAcces.Models.Pago", b =>
@@ -500,7 +500,7 @@ namespace bookme_backend.Migrations
 
                     b.HasIndex("ReservaId");
 
-                    b.ToTable("pagos");
+                    b.ToTable("pagos", (string)null);
                 });
 
             modelBuilder.Entity("bookme_backend.DataAcces.Models.Reserva", b =>
@@ -552,7 +552,7 @@ namespace bookme_backend.Migrations
 
                     b.HasIndex("UsuarioId");
 
-                    b.ToTable("reservas");
+                    b.ToTable("reservas", (string)null);
                 });
 
             modelBuilder.Entity("bookme_backend.DataAcces.Models.ReservasServicio", b =>
@@ -578,7 +578,7 @@ namespace bookme_backend.Migrations
 
                     b.HasIndex("ServicioId");
 
-                    b.ToTable("reservas_servicios");
+                    b.ToTable("reservas_servicios", (string)null);
                 });
 
             modelBuilder.Entity("bookme_backend.DataAcces.Models.Suscripcion", b =>
@@ -614,7 +614,7 @@ namespace bookme_backend.Migrations
 
                     b.HasIndex("IdUsuario");
 
-                    b.ToTable("suscripciones");
+                    b.ToTable("suscripciones", (string)null);
                 });
 
             modelBuilder.Entity("bookme_backend.DataAcces.Models.Usuario", b =>
@@ -731,7 +731,7 @@ namespace bookme_backend.Migrations
 
                     b.HasIndex("UsuarioId");
 
-                    b.ToTable("valoraciones");
+                    b.ToTable("valoraciones", (string)null);
                 });
 
             modelBuilder.Entity("bookme_backend.DataAcces.Models.ValoracionNegocio", b =>
@@ -770,7 +770,7 @@ namespace bookme_backend.Migrations
 
                     b.HasIndex("UsuarioId");
 
-                    b.ToTable("valoraciones_negocio");
+                    b.ToTable("valoraciones_negocio", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

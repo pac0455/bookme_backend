@@ -22,7 +22,7 @@ namespace bookme_backend.BLL.Services
     ) : INegocioService
     {
         private readonly IRepository<Negocio> _negocioRepo = negocioRepo;
-        private readonly HttpClient _httpClient= httpClient;
+        private readonly HttpClient _httpClient = httpClient;
         private readonly IRepository<Suscripcion> _subcripcionesRepo = subcripcionesRepo;
         private readonly IRepository<Reserva> _reservaRepo = reservaRepo;
         private readonly IRepository<Servicio> _servicioRepo = servicioRepo;
@@ -272,7 +272,8 @@ namespace bookme_backend.BLL.Services
                 }
                 return (true, "Negocios añadidos correctamente.");
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
 
                 return (false, $"Error al insertar horarios: {ex.Message}");
             }
@@ -380,10 +381,12 @@ namespace bookme_backend.BLL.Services
                 // Proyectar a DTO incluyendo cálculo de distancia si la ubicación del usuario existe
                 foreach (var n in negocios)
                 {
-                    var distancia = await CalcularDistanciaConGoogleAsync(
-                        ubicacionUser,
-                        new Ubicacion { Latitud = n.Latitud, Longitud = n.Longitud }
-                    );
+                    //Comentado porque quiero evitar llamadas a Google Maps por ahora   
+                    //var distancia = await CalcularDistanciaConGoogleAsync(
+                    //    ubicacionUser,
+                    //    new Ubicacion { Latitud = n.Latitud, Longitud = n.Longitud }
+                    //);
+                    var distancia = 0.0;
                     negociosDto.Add(new NegocioCardCliente
                     {
                         Id = n.Id,
