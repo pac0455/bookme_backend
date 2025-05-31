@@ -2,6 +2,7 @@
 using bookme_backend.BLL.Exceptions;
 using bookme_backend.BLL.Interfaces;
 using bookme_backend.DataAcces.DTO;
+using bookme_backend.DataAcces.DTO.Pago;
 using bookme_backend.DataAcces.Models;
 using bookme_backend.DataAcces.Repositories.Interfaces;
 using bookme_backend.UI.Controllers;
@@ -355,7 +356,7 @@ namespace bookme_backend.BLL.Services
                                              .Count(),
                                          TotalGastado = g.Sum(x =>
                                              x.pago != null
-                                             && x.pago.EstadoPago == "completado"
+                                             && x.pago.EstadoPago == EstadoPago.Confirmado
                                              && x.pago.Reembolsado == false
                                              && x.pago.Monto.HasValue
                                                  ? x.pago.Monto.Value
@@ -368,7 +369,7 @@ namespace bookme_backend.BLL.Services
                                                  .Average()
                                              : null,
                                          TotalCanceladas = g.Count(x =>
-                                             x.reserva.Estado == "Cancelada"),
+                                             x.reserva.Estado == DataAcces.DTO.Reserva.EstadoReserva.Cancelada),
                                          PuntuacionPromedio = g
                                              .Where(x => x.val != null && x.val.Puntuacion.HasValue)
                                              .Select(x => x.val.Puntuacion.Value)
@@ -500,6 +501,11 @@ namespace bookme_backend.BLL.Services
                 errores["password"] = "La contraseña es incorrecta.";
 
             return errores;
+        }
+
+        public Task<bool> UsuarioTieneServiciosAsync(int usuarioId)
+        {
+            throw new NotImplementedException();
         }
     }
 

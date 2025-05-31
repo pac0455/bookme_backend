@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
+using bookme_backend.DataAcces.DTO.Reserva;
 using Microsoft.EntityFrameworkCore;
 
 namespace bookme_backend.DataAcces.Models;
@@ -21,17 +22,17 @@ public partial class Reserva
     public string UsuarioId { get; set; } = null!;
 
     [Column("fecha")]
-    public DateOnly? Fecha { get; set; }
+    public DateOnly Fecha { get; set; }
 
     [Column("hora_inicio")]
-    public TimeOnly? HoraInicio { get; set; }
+    public TimeOnly HoraInicio { get; set; }
 
     [Column("hora_fin")]
-    public TimeOnly? HoraFin { get; set; }
+    public TimeOnly HoraFin { get; set; }
 
     [Column("estado")]
     [StringLength(255)]
-    public string? Estado { get; set; }
+    public EstadoReserva Estado { get; set; }
 
     [Column("comentario_cliente")]
     public string? ComentarioCliente { get; set; }

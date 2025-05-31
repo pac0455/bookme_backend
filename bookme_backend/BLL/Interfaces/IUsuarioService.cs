@@ -21,5 +21,7 @@ namespace bookme_backend.BLL.Interfaces
         Task<(bool Success, string Message, List<UsuarioReservaEstadisticaDto> Data)> GetEstadisticasUsuariosPorNegocioAsync(int negocioId);
         Task<Dictionary<string, string>> ValidarErroresRegistroAsync(RegisterDTO model);
         Task<Dictionary<string, string>> ValidarErroresLoginAsync(string email, string password);
+
+        Task<bool> UsuarioTieneServiciosAsync(int usuarioId);
     }
 }

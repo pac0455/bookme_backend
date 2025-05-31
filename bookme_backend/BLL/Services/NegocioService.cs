@@ -2,6 +2,9 @@
 using System.Text.Json;
 using bookme_backend.BLL.Interfaces;
 using bookme_backend.DataAcces.DTO;
+using bookme_backend.DataAcces.DTO.Google;
+using bookme_backend.DataAcces.DTO.Pago;
+using bookme_backend.DataAcces.DTO.Reserva;
 using bookme_backend.DataAcces.Models;
 using bookme_backend.DataAcces.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +17,8 @@ namespace bookme_backend.BLL.Services
         IRepository<Suscripcion> subcripcionesRepo,
         IRepository<Reserva> reservaRepo,
         IRepository<Servicio> servicioRepo,
+        IRepository<Horario> horarioRepo,
+
         ILogger<NegocioService> logger,
         IOptions<GoogleMapsSettings> googleMapsOptions,
         HttpClient httpClient
@@ -22,6 +27,8 @@ namespace bookme_backend.BLL.Services
     ) : INegocioService
     {
         private readonly IRepository<Negocio> _negocioRepo = negocioRepo;
+        private readonly IRepository<Horario> _horarioRepo = horarioRepo;
+
         private readonly HttpClient _httpClient = httpClient;
         private readonly IRepository<Suscripcion> _subcripcionesRepo = subcripcionesRepo;
         private readonly IRepository<Reserva> _reservaRepo = reservaRepo;
@@ -103,7 +110,7 @@ namespace bookme_backend.BLL.Services
                     Fecha = r.Fecha,
                     Estado = r.Estado,
                     ComentarioCliente = r.ComentarioCliente,
-                    EstadoPagoGeneral = r.Pagos.FirstOrDefault()?.EstadoPago ?? "sin pago",
+                    EstadoPagoGeneral = r.Pagos.FirstOrDefault()?.EstadoPago ?? EstadoPago.Pendiente,
                     Servicios = r.ReservasServicios.Select(rs => new ServicioConPagoDto
                     {
                         Nombre = rs.Servicio?.Nombre,
@@ -305,7 +312,15 @@ namespace bookme_backend.BLL.Services
         }
         public async Task<(bool Success, string Message)> UpdateAsync(Negocio negocio, string usuarioId)
         {
-            var negocioActual = await _negocioRepo.GetByIdAsync(negocio.Id);
+            _logger.LogInformation("UpdateAsync recibido con negocio: {@Negocio}", negocio);
+
+            var negocios = await _negocioRepo.GetWhereWithIncludesAsync(
+                x => x.Id == negocio.Id,
+                n => n.Categoria,
+                n => n.HorariosAtencion
+            );
+
+            var negocioActual = negocios.FirstOrDefault();
             if (negocioActual == null)
                 return (false, "Negocio no encontrado.");
 
@@ -324,7 +339,7 @@ namespace bookme_backend.BLL.Services
                 negocioActual.Nombre = negocio.Nombre;
             }
 
-            // Actualizar solo si cambian
+            // Actualizar campos si cambian
             if (!string.Equals(negocioActual.Descripcion, negocio.Descripcion, StringComparison.Ordinal))
                 negocioActual.Descripcion = negocio.Descripcion;
 
@@ -337,8 +352,40 @@ namespace bookme_backend.BLL.Services
             if (negocioActual.Longitud != negocio.Longitud)
                 negocioActual.Longitud = negocio.Longitud;
 
-            if (!string.Equals(negocioActual.Categoria.Nombre, negocio.Categoria.Nombre, StringComparison.Ordinal))
-                negocioActual.Categoria = negocio.Categoria;
+            if (negocioActual.CategoriaId != negocio.CategoriaId)
+                negocioActual.CategoriaId = negocio.CategoriaId;
+
+            if (negocioActual.Activo != negocio.Activo)
+                negocioActual.Activo = negocio.Activo;
+
+            // --- ACTUALIZAR HORARIOS ---
+            var horariosActuales = negocioActual.HorariosAtencion.ToList();
+
+            // Eliminar horarios que ya no están
+            foreach (var horarioActual in horariosActuales)
+            {
+                if (!negocio.HorariosAtencion.Any(h => h.Id == horarioActual.Id))
+                {
+                    await _horarioRepo.DeleteAsync(horarioActual);
+                }
+            }
+
+            // Agregar o actualizar horarios
+            foreach (var horario in negocio.HorariosAtencion)
+            {
+                var existente = horariosActuales.FirstOrDefault(h => h.Id == horario.Id);
+                if (existente != null)
+                {
+                    existente.DiaSemana = horario.DiaSemana;
+                    existente.HoraInicio = horario.HoraInicio;
+                    existente.HoraFin = horario.HoraFin;
+                }
+                else
+                {
+                    horario.IdNegocio = negocio.Id;
+                    negocioActual.HorariosAtencion.Add(horario);
+                }
+            }
 
             _negocioRepo.Update(negocioActual);
             await _negocioRepo.SaveChangesAsync();
@@ -467,11 +514,12 @@ namespace bookme_backend.BLL.Services
             var ahora = DateTime.Now.TimeOfDay;
 
             return horarios
-                .Where(h => h.DiaSemana.Equals(diaSemanaDb, StringComparison.OrdinalIgnoreCase))
-                .Any(h => ahora >= h.HoraInicio && ahora <= h.HoraFin);
+              .Where(h => h.DiaSemana.Equals(diaSemanaDb, StringComparison.OrdinalIgnoreCase))
+              .Any(h =>
+                  ahora >= h.HoraInicio.ToTimeSpan() &&
+                  ahora <= h.HoraFin.ToTimeSpan()
+              );
+
         }
-
-
-
     }
 }

@@ -1,4 +1,5 @@
 ﻿using bookme_backend.DataAcces.DTO;
+using bookme_backend.DataAcces.DTO.Reserva;
 using bookme_backend.DataAcces.Models;
 
 namespace bookme_backend.BLL.Interfaces

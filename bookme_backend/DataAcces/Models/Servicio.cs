@@ -20,10 +20,10 @@ public partial class Servicio
     public string? Descripcion { get; set; }
 
     [Column("duracion_minutos")]
-    public int? DuracionMinutos { get; set; }
+    public int DuracionMinutos { get; set; }
 
     [Column("precio", TypeName = "decimal(10, 2)")]
-    public decimal? Precio { get; set; }
+    public decimal Precio { get; set; }
 
     [Column("imagen_url")]
     [StringLength(500)]

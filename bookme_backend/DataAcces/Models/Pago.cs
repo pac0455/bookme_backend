@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using bookme_backend.DataAcces.DTO.Pago;
 using Microsoft.EntityFrameworkCore;
 
 namespace bookme_backend.DataAcces.Models;
@@ -24,7 +25,7 @@ public partial class Pago
 
     [Column("estado_pago")]
     [StringLength(255)]
-    public string EstadoPago { get; set; } = null!;
+    public EstadoPago EstadoPago { get; set; }
 
     [Column("metodo_pago")]
     [StringLength(255)]

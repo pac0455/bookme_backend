@@ -6,6 +6,11 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using bookme_backend.DataAcces.Models;
+using Microsoft.AspNetCore.Authorization;
+using bookme_backend.DataAcces.Repositories.Interfaces;
+using bookme_backend.BLL.Interfaces;
+using bookme_backend.DataAcces.DTO.Reserva;
+using bookme_backend.DataAcces.DTO.Pago;
 
 namespace bookme_backend.UI
 {
@@ -14,17 +19,33 @@ namespace bookme_backend.UI
     public class ReservasController : ControllerBase
     {
         private readonly BookmeContext _context;
+        private readonly IReservaService _reservaService;
+        private readonly IHorarioService _horarioService;
 
-        public ReservasController(BookmeContext context)
+
+
+        public ReservasController(BookmeContext context, IReservaService reservaService, IHorarioService horarioService)
         {
             _context = context;
+            _horarioService = horarioService;
+            _reservaService = reservaService;
         }
 
-        // GET: api/Reservas
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Reserva>>> GetReservas()
+        // GET: api/Horarios/Disponibles
+        [HttpGet("Disponibles")]
+        public async Task<IActionResult> GetHorarioDisponible(int negocioId, int servicioId, DateOnly date)
         {
-            return await _context.Reservas.ToListAsync();
+            // Llamamos al método del servicio
+            var (success, message, horarios) = await _horarioService.GetHorarioServicioSinReservaByNegocioID(negocioId, servicioId, date);
+
+            if (!success)
+            {
+                // Si no fue exitoso, devolvemos un mensaje de error
+                return BadRequest(new { message });
+            }
+
+            // Si fue exitoso, devolvemos los horarios disponibles
+            return Ok(horarios);
         }
 
         // GET: api/Reservas/5
@@ -59,29 +80,52 @@ namespace bookme_backend.UI
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!ReservaExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return NotFound();
             }
-
             return NoContent();
         }
 
         // POST: api/Reservas
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        [Authorize(Roles = "CLIENTE")]
         [HttpPost]
-        public async Task<ActionResult<Reserva>> PostReserva(Reserva reserva)
+        public async Task<IActionResult> PostReserva(ReservaCreateDTO dto)
         {
-            _context.Reservas.Add(reserva);
-            await _context.SaveChangesAsync();
+            // Mapeamos DTO a modelo Reserva
+            var reserva = new Reserva
+            {
+                NegocioId = dto.NegocioId,
+                UsuarioId = dto.UsuarioId,
+                Fecha = dto.Fecha,
+                HoraInicio = dto.HoraInicio,
+                HoraFin = dto.HoraFin,
+                Estado = dto.Estado,
+                ComentarioCliente = dto.ComentarioCliente
+            };
 
-            return CreatedAtAction("GetReserva", new { id = reserva.Id }, reserva);
+            // Crear el objeto Pago solo si se requiere
+            Pago? pago = null;
+            if (dto.Pago != null)
+            {
+                // Asumimos que el pago se realiza en físico
+                pago = new Pago
+                {
+                    Monto = dto.Pago.Monto,
+                    EstadoPago = EstadoPago.Confirmado, // Asumimos que el pago se confirma al momento
+                    MetodoPago = "Efectivo", // O el método que desees usar para pagos en físico
+                    Creado = DateTime.UtcNow
+                };
+            }
+
+            var (success, message, reservaCreada) = await _reservaService.CrearReservaAsync(reserva, dto.ServicioIds, pago);
+
+            if (!success || reservaCreada == null)
+                return BadRequest(new { message });
+
+            // Cargar explícitamente relaciones si quieres, o devolver reservaCreada directamente si ya está cargada
+            return CreatedAtAction(nameof(GetReserva), new { id = reservaCreada.Id }, reservaCreada);
         }
+
+
 
         // DELETE: api/Reservas/5
         [HttpDelete("{id}")]
@@ -97,11 +141,6 @@ namespace bookme_backend.UI
             await _context.SaveChangesAsync();
 
             return NoContent();
-        }
-
-        private bool ReservaExists(int id)
-        {
-            return _context.Reservas.Any(e => e.Id == id);
         }
     }
 }

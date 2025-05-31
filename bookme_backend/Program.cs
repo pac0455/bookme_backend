@@ -16,7 +16,7 @@ using Microsoft.IdentityModel.Tokens;
 using bookme_backend.UI;
 using bookme_backend.Services;
 using Microsoft.Extensions.FileProviders;
-using bookme_backend.DataAcces.DTO;
+using bookme_backend.DataAcces.DTO.Google;
 
 namespace bookme_backend
 {

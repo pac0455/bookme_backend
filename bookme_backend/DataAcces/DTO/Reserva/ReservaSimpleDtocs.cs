@@ -1,4 +1,4 @@
-﻿namespace bookme_backend.DataAcces.DTO
+﻿namespace bookme_backend.DataAcces.DTO.Reserva
 {
     public class ReservaSimpleDto
     {

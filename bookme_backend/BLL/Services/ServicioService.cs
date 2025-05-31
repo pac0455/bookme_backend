@@ -11,6 +11,7 @@ using bookme_backend.DataAcces.DTO;
 using Microsoft.EntityFrameworkCore;
 using bookme_backend.API.Controllers;
 using Microsoft.AspNetCore.Mvc;
+using bookme_backend.DataAcces.DTO.Servicio;
 
 
 namespace bookme_backend.Services
@@ -213,8 +214,8 @@ namespace bookme_backend.Services
                 {
                     Nombre = servicioExistente.Nombre,
                     Descripcion = servicioExistente.Descripcion,
-                    DuracionMinutos = servicioExistente.DuracionMinutos ?? -1,
-                    Precio = servicioExistente.Precio ?? -1
+                    DuracionMinutos = servicioExistente.DuracionMinutos,
+                    Precio = servicioExistente.Precio
                 };
 
                 return (true, "Servicio actualizado correctamente.", servicioActualizadoDto);
@@ -325,8 +326,8 @@ namespace bookme_backend.Services
                     NegocioId = s.NegocioId,
                     Nombre = s.Nombre ?? string.Empty,
                     Descripcion = s.Descripcion ?? string.Empty,
-                    DuracionMinutos = s.DuracionMinutos ?? 0,
-                    Precio = s.Precio ?? 0,
+                    DuracionMinutos = s.DuracionMinutos,
+                    Precio = s.Precio,
                     NegocioNombre = negocio.Nombre ?? string.Empty,
                     Categoria = negocio.Categoria?.Nombre ?? "Sin categoría",
                     ValoracionPromedio = promedio,

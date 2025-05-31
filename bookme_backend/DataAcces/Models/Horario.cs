@@ -17,13 +17,13 @@ namespace bookme_backend.DataAcces.Models
 
         [Column("dia_semana")]
         [StringLength(20)]
-        public string DiaSemana { get; set; } = null!; // Ej: "Lunes", "Martes", etc.
+        public string DiaSemana { get; set; } = null!;
 
         [Column("hora_inicio")]
-        public TimeSpan HoraInicio { get; set; }
+        public TimeOnly HoraInicio { get; set; }
 
         [Column("hora_fin")]
-        public TimeSpan HoraFin { get; set; }
+        public TimeOnly HoraFin { get; set; }
 
         [ForeignKey(nameof(IdNegocio))]
         [JsonIgnore]
