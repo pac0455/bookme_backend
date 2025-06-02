@@ -31,6 +31,18 @@ namespace bookme_backend.UI
             _reservaService = reservaService;
         }
 
+        [HttpGet("negocio/{negocioId}/reservas")]
+        public async Task<IActionResult> GetReservasPorNegocio(int negocioId)
+        {
+            var (success, message, reservas) = await _reservaService.GetReservaNegocioByNegocioId(negocioId);
+
+            if (!success)
+                return NotFound(new { Message = message });
+
+            return Ok(reservas);
+        }
+
+
         // GET: api/Horarios/Disponibles
         [HttpGet("Disponibles")]
         public async Task<IActionResult> GetHorarioDisponible(int negocioId, int servicioId, DateOnly date)
@@ -62,28 +74,7 @@ namespace bookme_backend.UI
             return reserva;
         }
 
-        // PUT: api/Reservas/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutReserva(int id, Reserva reserva)
-        {
-            if (id != reserva.Id)
-            {
-                return BadRequest();
-            }
 
-            _context.Entry(reserva).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                return NotFound();
-            }
-            return NoContent();
-        }
 
         // POST: api/Reservas
         [Authorize(Roles = "CLIENTE")]

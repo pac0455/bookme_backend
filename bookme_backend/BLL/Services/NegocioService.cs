@@ -298,7 +298,7 @@ namespace bookme_backend.BLL.Services
 
                 var negocios = await _negocioRepo.GetWhereWithIncludesAsync(
                     n => negocioIds.Contains(n.Id),
-                    n => n.HorariosAtencion,  // Incluir horarios,
+                    n => n.HorariosAtencion,  
                     n => n.Categoria
                 );
 

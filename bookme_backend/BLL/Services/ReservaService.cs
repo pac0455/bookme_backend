@@ -13,7 +13,9 @@ namespace bookme_backend.BLL.Services
         private readonly IRepository<Pago> _pagoRepo;
         private readonly IRepository<Negocio> _negocioRepo;
         private readonly IRepository<Servicio> _servicioRepo;
-         private readonly IPasarelaSimulada _pasarelaSimulada;
+        private readonly IRepository<Usuario> _usuarioRepo;
+
+        private readonly IPasarelaSimulada _pasarelaSimulada;
        private readonly UserManager<Usuario> _userManager;
 
         public ReservaService(
@@ -22,6 +24,7 @@ namespace bookme_backend.BLL.Services
             IPasarelaSimulada pasarelaSimulada,
             IRepository<Negocio> negocioRepo,
             IRepository<Servicio> servicioRepo,
+            IRepository<Usuario> usuarioRepo,
             UserManager<Usuario> userManager)
         {
             _reservaRepo = reservaRepo;
@@ -30,6 +33,7 @@ namespace bookme_backend.BLL.Services
             _negocioRepo = negocioRepo;
             _servicioRepo = servicioRepo;
             _userManager = userManager;
+            _usuarioRepo = usuarioRepo;
         }
 
         public async Task<(bool Success, string Message, ReservaResponseDTO? reserva)> CrearReservaAsync(ReservaCreateDTO dto)
@@ -254,10 +258,18 @@ namespace bookme_backend.BLL.Services
             {
                 var servicio = await _servicioRepo.GetByIdAsync(reserva.ServicioId);
                 if (servicio == null)
-                    continue; // Puedes decidir si quieres saltar o devolver error aquí
+                    continue; 
 
                 var pagos = await _pagoRepo.GetWhereAsync(p => p.ReservaId == reserva.Id);
                 var pago = pagos.FirstOrDefault();
+
+
+                var fechaFinReserva = reserva.Fecha.ToDateTime(reserva.HoraFin);
+                bool esFinalizada = DateTime.Now > fechaFinReserva;
+
+                var estadoFinal = reserva.Estado == EstadoReserva.Cancelada
+                    ? EstadoReserva.Cancelada
+                    : (esFinalizada ? EstadoReserva.Finalizada : reserva.Estado);
 
                 reservaDtos.Add(new ReservaResponseDTO
                 {
@@ -335,5 +347,68 @@ namespace bookme_backend.BLL.Services
 
             return (true, "Reserva cancelada correctamente.", reservaDto);
         }
+
+        public async Task<(bool Success, string Message, List<ReservaResponseNegocioDTO> reservas)> GetReservaNegocioByNegocioId(int negocioId)
+        {
+            try
+            {
+                // Obtener todas las reservas del negocio con sus datos relacionados
+                var reservas = await _reservaRepo.GetWhereWithIncludesAsync(
+                    r => r.NegocioId == negocioId,
+                    r => r.Usuario,        // incluir datos usuario
+                    r => r.Servicio,      // incluir datos servicio
+                    r => r.Pago          // incluir pagos asociados
+                );
+
+                if (reservas == null || !reservas.Any())
+                    return (false, "No se encontraron reservas", new List<ReservaResponseNegocioDTO>());
+
+                // Obtener la cantidad total de reservas por usuario en este negocio (cache para eficiencia)
+                var reservasPorUsuario = reservas
+                    .GroupBy(r => r.UsuarioId)
+                    .ToDictionary(g => g.Key, g => g.Count());
+
+                // Mapear a DTO
+                var resultado = reservas.Select(r =>
+                {
+                    var fechaFinReserva = r.Fecha.ToDateTime(r.HoraFin);
+                    bool esFinalizada = DateTime.Now > fechaFinReserva;
+                    
+
+                    var reserva= new ReservaResponseNegocioDTO
+                    {
+                        Id = r.Id,
+                        Username = r.Usuario?.UserName ?? "Usuario sin nombre",
+                        NReservasUsuario = reservasPorUsuario.ContainsKey(r.UsuarioId) ? reservasPorUsuario[r.UsuarioId] : 0,
+                        ServicioNombre = r.Servicio?.Nombre ?? "Servicio sin nombre",
+                        ServicioDescripcion = r.Servicio?.Descripcion ?? "Sin descripcion",
+                        Fecha = r.Fecha,
+                        HoraInicio = TimeOnly.Parse(r.HoraInicio.ToString()),
+                        HoraFin = TimeOnly.Parse(r.HoraFin.ToString()),
+                        Precio = Decimal.ToDouble(r.Servicio?.Precio ?? 0),
+                        Moneda = r.Pago.Moneda ?? "EUR",
+                        EstadoReserva = EstadoReserva.Pendiente,
+                        EstadoPago = r.Pago.EstadoPago
+                    };
+                    if(r.Estado == EstadoReserva.Cancelada)
+                    {
+                        reserva.EstadoReserva = EstadoReserva.Cancelada;
+                    }
+                    else
+                    {
+                        reserva.EstadoReserva = esFinalizada ? EstadoReserva.Finalizada : r.Estado;
+                    }
+                    return reserva;
+                }).ToList();
+
+
+                return (true, "Reservas obtenidas", resultado);
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Error al obtener reservas: {ex.Message}", new List<ReservaResponseNegocioDTO>());
+            }
+        }
+
     }
 }

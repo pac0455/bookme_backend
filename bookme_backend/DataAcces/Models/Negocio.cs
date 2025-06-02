@@ -33,7 +33,6 @@ public partial class Negocio
     public double? Longitud { get; set; }
     [Column("categoria"), Required]
     public int CategoriaId { get; set; }
-    [JsonIgnore]
 
     [ForeignKey("CategoriaId")] public virtual
     Categoria Categoria { get; set; } = null!;
