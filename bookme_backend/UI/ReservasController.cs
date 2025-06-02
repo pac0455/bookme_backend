@@ -109,14 +109,13 @@ namespace bookme_backend.UI
 
             if (!success || reservas == null)
                 return NotFound(new { message });
-
             return Ok(reservas);
         }
 
 
 
         [HttpPut("Cancelar/{id}")]
-        //[Authorize(Roles = "NEGOCIO,CLIENTE")]
+        [Authorize(Roles = "NEGOCIO,CLIENTE")]
         public async Task<IActionResult> CancelarReservaPorNegocio(int id)
         {
             var (success, message, reservaCancelada) = await _reservaService.CancelarReservaByNegocioId(id);
