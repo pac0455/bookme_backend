@@ -17,6 +17,7 @@ using bookme_backend.UI;
 using bookme_backend.Services;
 using Microsoft.Extensions.FileProviders;
 using bookme_backend.DataAcces.DTO.Google;
+using System.Text.Json.Serialization;
 
 namespace bookme_backend
 {
@@ -58,7 +59,12 @@ namespace bookme_backend
             builder.Services.AddDbContext<BookmeContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
             // Add services to the container.
-            builder.Services.AddControllers(options => options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes=true);
+            builder.Services.AddControllers(options => 
+            options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes=true)
+                  .AddJsonOptions(options =>
+                  {
+                      options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                  });
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(c =>
@@ -108,9 +114,9 @@ namespace bookme_backend
             builder.Services.AddScoped<IHorarioService, HorarioService>();
             builder.Services.AddScoped<IServicioService, ServicioService>();
             builder.Services.AddScoped<ICategoriaService, CategoriaService>();
-
-
-
+            builder.Services.AddScoped<IReservaService, ReservaService>();
+            builder.Services.AddScoped<IValoracionesService, ValoracionesService>();
+            builder.Services.AddScoped<IPasarelaSimulada, PasarelaService>();
             builder.Services.AddScoped<INegocioService, NegocioService>();
             builder.Services.AddScoped<ICustomEmailSender, EmailSender>();
 

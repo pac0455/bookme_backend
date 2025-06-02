@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using bookme_backend.DataAcces.DTO.Reserva;
+using bookme_backend.DataAcces.Models;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
-using bookme_backend.DataAcces.DTO.Reserva;
-using Microsoft.EntityFrameworkCore;
-
-namespace bookme_backend.DataAcces.Models;
 
 [Table("reservas")]
 public partial class Reserva
@@ -34,29 +30,26 @@ public partial class Reserva
     [StringLength(255)]
     public EstadoReserva Estado { get; set; }
 
-    [Column("comentario_cliente")]
-    public string? ComentarioCliente { get; set; }
-
     [Column("fecha_creacion", TypeName = "datetime")]
     public DateTime? FechaCreacion { get; set; }
+
+    [Column("servicio_id")]
+    public int ServicioId { get; set; }
 
     [ForeignKey("NegocioId")]
     [InverseProperty("Reservas")]
     [JsonIgnore]
     public virtual Negocio Negocio { get; set; } = null!;
 
-    [InverseProperty("Reserva")]
-    public virtual ICollection<Pago> Pagos { get; set; } = new List<Pago>();
-
-    [InverseProperty("Reserva")]
-    
-    public virtual ICollection<ReservasServicio> ReservasServicios { get; set; } = new List<ReservasServicio>();
-
     [ForeignKey("UsuarioId")]
     [InverseProperty("Reservas")]
     [JsonIgnore]
     public virtual Usuario Usuario { get; set; } = null!;
 
+    [ForeignKey("ServicioId")]
+    [InverseProperty("Reservas")]
+    public virtual Servicio Servicio { get; set; } = null!;
+
     [InverseProperty("Reserva")]
-    public virtual ICollection<Valoracion> Valoraciones { get; set; } = new List<Valoracion>();
+    public virtual Pago? Pago { get; set; }
 }

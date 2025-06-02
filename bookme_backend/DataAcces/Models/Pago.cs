@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using bookme_backend.DataAcces.DTO.Pago;
-using Microsoft.EntityFrameworkCore;
 
 namespace bookme_backend.DataAcces.Models;
 
@@ -24,16 +22,10 @@ public partial class Pago
     public DateTime? FechaPago { get; set; }
 
     [Column("estado_pago")]
-    [StringLength(255)]
     public EstadoPago EstadoPago { get; set; }
 
     [Column("metodo_pago")]
-    [StringLength(255)]
-    public string MetodoPago { get; set; } = null!;
-
-    [Column("id_transaccion_externa")]
-    [StringLength(255)]
-    public string? IdTransaccionExterna { get; set; }
+    public MetodoPago MetodoPago { get; set; }
 
     [Column("respuesta_pasarela")]
     public string? RespuestaPasarela { get; set; }
@@ -42,16 +34,7 @@ public partial class Pago
     [StringLength(10)]
     public string? Moneda { get; set; }
 
-    [Column("reembolsado")]
-    public bool? Reembolsado { get; set; }
-
-    [Column("creado", TypeName = "datetime")]
-    public DateTime? Creado { get; set; }
-
-    [Column("actualizado", TypeName = "datetime")]
-    public DateTime? Actualizado { get; set; }
-
     [ForeignKey("ReservaId")]
-    [InverseProperty("Pagos")]
+    [InverseProperty("Pago")]
     public virtual Reserva Reserva { get; set; } = null!;
 }

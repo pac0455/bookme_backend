@@ -25,7 +25,7 @@ namespace bookme_backend.API.Controllers
         }
 
         // GET: api/Servicio
-        [Authorize(Roles = "NEGOCIO")]
+        [Authorize(Roles = "NEGOCIO,CLIENTE")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Servicio>>> GetServicios()
         {
@@ -129,6 +129,18 @@ namespace bookme_backend.API.Controllers
                 return NotFound(new { message });
 
             return NoContent();
+        }
+        // GET: api/Servicio/Detalle
+        [HttpGet("Detalle")]
+        [Authorize(Roles = "NEGOCIO,CLIENTE")]
+        public async Task<ActionResult> GetServiciosDetalle()
+        {
+            var (success, message, serviciosDetalle) = await _servicioService.GetServiciosDetalleAsync();
+
+            if (!success)
+                return NotFound(new { message });
+
+            return Ok(serviciosDetalle);
         }
     }
 }

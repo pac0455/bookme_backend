@@ -5,7 +5,7 @@ using ProjNet.CoordinateSystems;
 using ProjNet.CoordinateSystems.Transformations;
 
 public static class GeoUtils
-{
+{ 
     public static double? CalcularDistanciaEnKilometros(Ubicacion ubicacion1, Ubicacion ubicacion2)
     {
         if (ubicacion1?.Latitud == null || ubicacion1?.Longitud == null ||

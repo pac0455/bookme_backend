@@ -215,6 +215,7 @@ namespace bookme_backend.UI
         }
 
         [HttpGet("{id}/reservas/detalladas")]
+        [Authorize(Roles = "NEGOCIO")]
         public async Task<IActionResult> GetReservasDetalladas(int id)
         {
             var (success, message, reservas) = await _negocioService.GetReservasDetalladasByNegocioIdAsync(id);
@@ -230,6 +231,7 @@ namespace bookme_backend.UI
 
 
         [HttpGet("{id}/servicios")]
+        [Authorize(Roles = "NEGOCIO,CLIENTE")]
         public async Task<IActionResult> GetServiciosByNegocioId(int id)
         {
             var (success, message, servicios) = await _negocioService.GetServiciosByNegocioIdAsync(id);
@@ -242,6 +244,7 @@ namespace bookme_backend.UI
 
             return Ok(servicios);
         }
+        //[Authorize(Roles = "NEGOCIO,CLIENTE")]
         [HttpPost("cliente/negocios")]
         public async Task<IActionResult> GetNegociosParaClienteAsync(Ubicacion? ubicacion)
         {
@@ -254,6 +257,20 @@ namespace bookme_backend.UI
             }
 
             return Ok(negocios);
+        }
+        [Authorize(Roles = "NEGOCIO,CLIENTE")]
+        [HttpPost("cliente/negocio/{id}")]
+        public async Task<IActionResult> GetNegocioParaCliente(int id, [FromBody] Ubicacion? ubicacion)
+        {
+            var (success, message, negocio) = await _negocioService.GetNegocioParaClienteAsync(id, ubicacion);
+
+            if (!success || negocio == null)
+            {
+                _logger.LogWarning($"Error al obtener negocio {id} para cliente: {message}");
+                return NotFound(message);
+            }
+
+            return Ok(negocio);
         }
     }
 }

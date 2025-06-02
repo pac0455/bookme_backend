@@ -22,8 +22,6 @@ public partial class BookmeContext : IdentityDbContext<Usuario>
 
     public virtual DbSet<Reserva> Reservas { get; set; }
 
-    public virtual DbSet<ReservasServicio> ReservasServicios { get; set; }
-
     public virtual DbSet<Servicio> Servicios { get; set; }
 
     public virtual DbSet<Suscripcion> Suscripciones { get; set; }
@@ -36,12 +34,7 @@ public partial class BookmeContext : IdentityDbContext<Usuario>
     {
         base.OnModelCreating(modelBuilder);
 
-        // Configurar restricción para evitar múltiples caminos en cascada
-        modelBuilder.Entity<Valoracion>()
-            .HasOne(v => v.Reserva)
-            .WithMany(r => r.Valoraciones)
-            .HasForeignKey(v => v.ReservaId)
-            .OnDelete(DeleteBehavior.Restrict); //  EVITA el error DE MULTIPLES CASCADE APUNTANDO A UNA TABLA
+       
 
         modelBuilder.Entity<Valoracion>()
             .HasOne(v => v.Usuario)
@@ -49,18 +42,12 @@ public partial class BookmeContext : IdentityDbContext<Usuario>
             .HasForeignKey(v => v.UsuarioId)
             .OnDelete(DeleteBehavior.Restrict); //  EVITA el error DE MULTIPLES CASCADE APUNTANDO A UNA TABLA
 
-        modelBuilder.Entity<ReservasServicio>()
-       .HasOne(rs => rs.Reserva)
-       .WithMany(r => r.ReservasServicios)
-       .HasForeignKey(rs => rs.ReservaId)
-       .OnDelete(DeleteBehavior.Cascade); // 
+        modelBuilder.Entity<Reserva>()
+            .HasOne(r => r.Servicio)
+            .WithMany(s => s.Reservas) // aquí enlazas la colección inversa si existe
+            .HasForeignKey(r => r.ServicioId)
+            .OnDelete(DeleteBehavior.Restrict);
 
-        //ESTO SE RESOLVERA CON TRIGGER
-        modelBuilder.Entity<ReservasServicio>()
-            .HasOne(rs => rs.Servicio)
-            .WithMany(s => s.ReservasServicios)
-            .HasForeignKey(rs => rs.ServicioId)
-            .OnDelete(DeleteBehavior.Restrict); // También evita conflicto
 
 
         modelBuilder.Entity<Horario>()
@@ -93,14 +80,11 @@ public partial class BookmeContext : IdentityDbContext<Usuario>
             new Categoria { Id = 20, Nombre = "Terapias Alternativas" },
             new Categoria { Id = 21, Nombre = "Cuidado de Mascotas" },
             new Categoria { Id = 22, Nombre = "Mecánica" },
-            new Categoria { Id = 23, Nombre = "Electricista" },
+            new Categoria { Id = 23, Nombre = "Electricista" }, 
             new Categoria { Id = 24, Nombre = "Fontanero" },
             new Categoria { Id = 25, Nombre = "Fotografía" }
         );
 
     }
-
     public DbSet<Horario> Horarios { get; set; } = default!;
-
-
 }

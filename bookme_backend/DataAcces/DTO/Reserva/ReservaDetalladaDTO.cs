@@ -24,7 +24,7 @@ namespace bookme_backend.DataAcces.DTO.Reserva
     {
         public double Monto { get; set; }
         public EstadoPago Estado { get; set; } 
-        public string Metodo { get; set; } = string.Empty;
+        public MetodoPago Metodo { get; set; }
         public DateTime FechaPago { get; set; }
     }
 }

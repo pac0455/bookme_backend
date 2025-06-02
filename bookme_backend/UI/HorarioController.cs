@@ -11,6 +11,7 @@ using bookme_backend.BLL.Services;
 using bookme_backend.BLL.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using System.Data;
+using System.Globalization;
 
 namespace bookme_backend.UI
 {
@@ -32,7 +33,7 @@ namespace bookme_backend.UI
 
         // GET: api/Horarios/Disponibles/5/3/2025-06-01
         //[Authorize(Roles = "CLIENTE,NEGOCIO")]
-        [HttpGet("Disponibles/{negocioId:int}/{servicioId:int}/fecha")]
+        [HttpGet("Disponibles/{negocioId:int}/{servicioId:int}/{fecha}")]
         public async Task<ActionResult<List<Horario>>> GetHorariosDisponibles(
             int negocioId,
             int servicioId,
@@ -44,8 +45,11 @@ namespace bookme_backend.UI
                 {
                     return BadRequest("Los IDs deben ser mayores que cero.");
                 }
-                if (!DateTime.TryParse(fecha, out var fechaParseada))
-                    return BadRequest("Fecha inválida.");
+                if (!DateTime.TryParseExact(fecha, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var fechaParseada))
+                {
+                    return BadRequest("Fecha inválida. El formato debe ser yyyy-MM-dd.");
+                }
+
 
 
                 var dateOnly = DateOnly.FromDateTime(fechaParseada);

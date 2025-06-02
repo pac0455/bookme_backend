@@ -22,19 +22,11 @@ namespace bookme_backend.BLL.Services
 {
     public class UsuarioService(
         IUsuarioRepository usuarioRepository,
-        IPasswordHelper passwordHelper,
         IConfiguration configuration,
         UserManager<Usuario> userManager,
         ICustomEmailSender emailSender,
         ILogger<UsuarioService> logger,
-        RoleManager<IdentityRole> roleManager,
-        IRepository<Suscripcion> repoSubcription,
-        IRepository<Reserva> repoReserva,
-        IRepository<Pago> repoPagos,
-        IRepository<Valoracion> repoValoracion,
-        IRepository<Servicio> repoServicio,
-        IRepository<ReservasServicio> repoReservaServicio,
-        IRepository<Negocio> repoNegocio
+        RoleManager<IdentityRole> roleManager
     ) : IUsuarioService
     {
         private readonly IUsuarioRepository _usuarioRepository = usuarioRepository;
@@ -43,14 +35,6 @@ namespace bookme_backend.BLL.Services
         private readonly ICustomEmailSender _emailSender = emailSender;
         private readonly ILogger<UsuarioService> _logger = logger;
         private readonly RoleManager<IdentityRole> _roleManager = roleManager;
-
-        private readonly IRepository<Suscripcion> _repoSubcription = repoSubcription;
-        private readonly IRepository<Reserva> _repoReserva = repoReserva;
-        private readonly IRepository<Pago> _repoPagos = repoPagos;
-        private readonly IRepository<Valoracion> _repoValoracion = repoValoracion;
-        private readonly IRepository<Servicio> _repoServicio = repoServicio;
-        private readonly IRepository<ReservasServicio> _repoReservaServicio = repoReservaServicio;
-        private readonly IRepository<Negocio> _repoNegocio = repoNegocio; 
 
 
 
@@ -281,121 +265,121 @@ namespace bookme_backend.BLL.Services
             };
         }
 
-        public async Task<(bool Success, string Message, List<UsuarioReservaEstadisticaDto> Data)> GetEstadisticasUsuariosPorNegocioAsync(int negocioId)
-        {
-            try
-            {
-                var negocio = await _repoNegocio.GetByIdAsync(negocioId);
-                if (negocio == null)
-                    return (false, $"No existe negocio con Id {negocioId}.", []);
+        //public async Task<(bool Success, string Message, List<UsuarioReservaEstadisticaDto> Data)> GetEstadisticasUsuariosPorNegocioAsync(int negocioId)
+        //{
+        //    try
+        //    {
+        //        var negocio = await _repoNegocio.GetByIdAsync(negocioId);
+        //        if (negocio == null)
+        //            return (false, $"No existe negocio con Id {negocioId}.", []);
 
-                var usuariosConReservas = from usuario in _usuarioRepository.Query()
-                                          join reserva in _repoReserva.Query()
-                                              .Where(r => r.NegocioId == negocioId)
-                                              on usuario.Id equals reserva.UsuarioId
-                                          select new { usuario, reserva };
-                var conPagos = from ur in usuariosConReservas
-                               join pago in _repoPagos.Query()
-                                   on ur.reserva.Id equals pago.ReservaId into pagoGroup
-                               from pago in pagoGroup.DefaultIfEmpty()
-                               select new { ur.usuario, ur.reserva, pago };
-                var conValoraciones = from cp in conPagos
-                                      join val in _repoValoracion.Query()
-                                          on cp.reserva.Id equals val.ReservaId into valGroup
-                                      from val in valGroup.DefaultIfEmpty()
-                                      select new { cp.usuario, cp.reserva, cp.pago, val };
-                var conServicios = from cv in conValoraciones
-                                   join rs in _repoReservaServicio.Query()
-                                       on cv.reserva.Id equals rs.ReservaId into rsGroup
-                                   from rs in rsGroup.DefaultIfEmpty()
-                                   join servicio in _repoServicio.Query()
-                                       on rs.ServicioId equals servicio.Id into servicioGroup
-                                   from servicio in servicioGroup.DefaultIfEmpty()
-                                   select new { cv.usuario, cv.reserva, cv.pago, cv.val, servicio };
-                var conSuscripciones = from cs in conServicios
-                                       join suscripcion in _repoSubcription.Query()
-                                           .Where(s => s.RolNegocio.ToLower() == "cliente")
-                                           on cs.usuario.Id equals suscripcion.IdUsuario into subGroup
-                                       from suscripcion in subGroup.DefaultIfEmpty()
-                                       select new
-                                       {
-                                           cs.usuario,
-                                           cs.reserva,
-                                           cs.pago,
-                                           cs.val,
-                                           cs.servicio,
-                                           suscripcion
-                                       };
-                // Ejecutar la consulta básica y obtener la lista completa en memoria
-                var listaCompleta = await conSuscripciones
-                    .Where(item => item.reserva != null)
-                    .ToListAsync();
-                var resultadoFinal = from item in listaCompleta
-                                     where item.reserva != null
-                                     group item by new
-                                     {
-                                         item.usuario.Id,
-                                         item.usuario.UserName,
-                                         item.usuario.Email
-                                     } into g
-                                     let fechasReservas = g
-                                        .Where(x => x.reserva.FechaCreacion != null)
-                                        .Select(x => x.reserva.FechaCreacion ?? DateTime.MinValue)
-                                        .Distinct()
-                                        .OrderBy(f => f)
-                                        .ToList()
+        //        var usuariosConReservas = from usuario in _usuarioRepository.Query()
+        //                                  join reserva in _repoReserva.Query()
+        //                                      .Where(r => r.NegocioId == negocioId)
+        //                                      on usuario.Id equals reserva.UsuarioId
+        //                                  select new { usuario, reserva };
+        //        var conPagos = from ur in usuariosConReservas
+        //                       join pago in _repoPagos.Query()
+        //                           on ur.reserva.Id equals pago.ReservaId into pagoGroup
+        //                       from pago in pagoGroup.DefaultIfEmpty()
+        //                       select new { ur.usuario, ur.reserva, pago };
+        //        var conValoraciones = from cp in conPagos
+        //                              join val in _repoValoracion.Query()
+        //                                  on cp.reserva.Id equals val.ReservaId into valGroup
+        //                              from val in valGroup.DefaultIfEmpty()
+        //                              select new { cp.usuario, cp.reserva, cp.pago, val };
+        //        var conServicios = from cv in conValoraciones
+        //                           join rs in _repoReservaServicio.Query()
+        //                               on cv.reserva.Id equals rs.ReservaId into rsGroup
+        //                           from rs in rsGroup.DefaultIfEmpty()
+        //                           join servicio in _repoServicio.Query()
+        //                               on rs.ServicioId equals servicio.Id into servicioGroup
+        //                           from servicio in servicioGroup.DefaultIfEmpty()
+        //                           select new { cv.usuario, cv.reserva, cv.pago, cv.val, servicio };
+        //        var conSuscripciones = from cs in conServicios
+        //                               join suscripcion in _repoSubcription.Query()
+        //                                   .Where(s => s.RolNegocio.ToLower() == "cliente")
+        //                                   on cs.usuario.Id equals suscripcion.IdUsuario into subGroup
+        //                               from suscripcion in subGroup.DefaultIfEmpty()
+        //                               select new
+        //                               {
+        //                                   cs.usuario,
+        //                                   cs.reserva,
+        //                                   cs.pago,
+        //                                   cs.val,
+        //                                   cs.servicio,
+        //                                   suscripcion
+        //                               };
+        //        // Ejecutar la consulta básica y obtener la lista completa en memoria
+        //        var listaCompleta = await conSuscripciones
+        //            .Where(item => item.reserva != null)
+        //            .ToListAsync();
+        //        var resultadoFinal = from item in listaCompleta
+        //                             where item.reserva != null
+        //                             group item by new
+        //                             {
+        //                                 item.usuario.Id,
+        //                                 item.usuario.UserName,
+        //                                 item.usuario.Email
+        //                             } into g
+        //                             let fechasReservas = g
+        //                                .Where(x => x.reserva.FechaCreacion != null)
+        //                                .Select(x => x.reserva.FechaCreacion ?? DateTime.MinValue)
+        //                                .Distinct()
+        //                                .OrderBy(f => f)
+        //                                .ToList()
 
-                                     select new UsuarioReservaEstadisticaDto
-                                     {
-                                         UsuarioId = g.Key.Id,
-                                         Nombre = g.Key.UserName,
-                                         Email = g.Key.Email,
-                                         TotalReservas = g
-                                             .Select(x => x.reserva.Id)
-                                             .Distinct()
-                                             .Count(),
-                                         TotalGastado = g.Sum(x =>
-                                             x.pago != null
-                                             && x.pago.EstadoPago == EstadoPago.Confirmado
-                                             && x.pago.Reembolsado == false
-                                             && x.pago.Monto.HasValue
-                                                 ? x.pago.Monto.Value
-                                                 : 0m),
-                                         FechaPrimeraReserva = fechasReservas.FirstOrDefault(),
-                                         FechaUltimaReserva = fechasReservas.LastOrDefault(),
-                                         FrecuenciaPromedioDias = fechasReservas.Count >= 2
-                                             ? fechasReservas
-                                                 .Zip(fechasReservas.Skip(1), (a, b) => (b - a).TotalDays)
-                                                 .Average()
-                                             : null,
-                                         TotalCanceladas = g.Count(x =>
-                                             x.reserva.Estado == DataAcces.DTO.Reserva.EstadoReserva.Cancelada),
-                                         PuntuacionPromedio = g
-                                             .Where(x => x.val != null && x.val.Puntuacion.HasValue)
-                                             .Select(x => x.val.Puntuacion.Value)
-                                             .DefaultIfEmpty()
-                                             .Average(),
-                                         ServiciosMasUsados = g
-                                             .Where(x => x.servicio != null
-                                                         && x.servicio.Nombre != null)
-                                             .GroupBy(x => x.servicio.Nombre)
-                                             .OrderByDescending(gr => gr.Count())
-                                             .Take(3)
-                                             .Select(gr => gr.Key)
-                                             .ToList(),
-                                         EstaSuscrito = g.Any(x => x.suscripcion != null)
-                                     };
-                var result = resultadoFinal.ToList();
-                return (true, "OK", result);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error en GetEstadisticasUsuariosPorNegocioAsync");
-                _logger.LogError(ex, ex.Message);
-                _logger.LogError(ex, ex.InnerException?.Message);
-                return (false, "Error interno", new List<UsuarioReservaEstadisticaDto>());
-            }
-        }
+        //                             select new UsuarioReservaEstadisticaDto
+        //                             {
+        //                                 UsuarioId = g.Key.Id,
+        //                                 Nombre = g.Key.UserName,
+        //                                 Email = g.Key.Email,
+        //                                 TotalReservas = g
+        //                                     .Select(x => x.reserva.Id)
+        //                                     .Distinct()
+        //                                     .Count(),
+        //                                 TotalGastado = g.Sum(x =>
+        //                                     x.pago != null
+        //                                     && x.pago.EstadoPago == EstadoPago.Confirmado
+        //                                     && x.pago.Reembolsado == false
+        //                                     && x.pago.Monto.HasValue
+        //                                         ? x.pago.Monto.Value
+        //                                         : 0m),
+        //                                 FechaPrimeraReserva = fechasReservas.FirstOrDefault(),
+        //                                 FechaUltimaReserva = fechasReservas.LastOrDefault(),
+        //                                 FrecuenciaPromedioDias = fechasReservas.Count >= 2
+        //                                     ? fechasReservas
+        //                                         .Zip(fechasReservas.Skip(1), (a, b) => (b - a).TotalDays)
+        //                                         .Average()
+        //                                     : null,
+        //                                 TotalCanceladas = g.Count(x =>
+        //                                     x.reserva.Estado == DataAcces.DTO.Reserva.EstadoReserva.Cancelada),
+        //                                 PuntuacionPromedio = g
+        //                                     .Where(x => x.val != null && x.val.Puntuacion.HasValue)
+        //                                     .Select(x => x.val.Puntuacion.Value)
+        //                                     .DefaultIfEmpty()
+        //                                     .Average(),
+        //                                 ServiciosMasUsados = g
+        //                                     .Where(x => x.servicio != null
+        //                                                 && x.servicio.Nombre != null)
+        //                                     .GroupBy(x => x.servicio.Nombre)
+        //                                     .OrderByDescending(gr => gr.Count())
+        //                                     .Take(3)
+        //                                     .Select(gr => gr.Key)
+        //                                     .ToList(),
+        //                                 EstaSuscrito = g.Any(x => x.suscripcion != null)
+        //                             };
+        //        var result = resultadoFinal.ToList();
+        //        return (true, "OK", result);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Error en GetEstadisticasUsuariosPorNegocioAsync");
+        //        _logger.LogError(ex, ex.Message);
+        //        _logger.LogError(ex, ex.InnerException?.Message);
+        //        return (false, "Error interno", new List<UsuarioReservaEstadisticaDto>());
+        //    }
+        //}
 
         public async Task<Dictionary<string, string>> ValidarErroresRegistroAsync(RegisterDTO model)
         {
@@ -504,6 +488,11 @@ namespace bookme_backend.BLL.Services
         }
 
         public Task<bool> UsuarioTieneServiciosAsync(int usuarioId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<(bool Success, string Message, List<UsuarioReservaEstadisticaDto> Data)> GetEstadisticasUsuariosPorNegocioAsync(int negocioId)
         {
             throw new NotImplementedException();
         }

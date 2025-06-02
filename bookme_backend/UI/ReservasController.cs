@@ -90,39 +90,26 @@ namespace bookme_backend.UI
         [HttpPost]
         public async Task<IActionResult> PostReserva(ReservaCreateDTO dto)
         {
-            // Mapeamos DTO a modelo Reserva
-            var reserva = new Reserva
-            {
-                NegocioId = dto.NegocioId,
-                UsuarioId = dto.UsuarioId,
-                Fecha = dto.Fecha,
-                HoraInicio = dto.HoraInicio,
-                HoraFin = dto.HoraFin,
-                Estado = dto.Estado,
-                ComentarioCliente = dto.ComentarioCliente
-            };
+           
 
-            // Crear el objeto Pago solo si se requiere
-            Pago? pago = null;
-            if (dto.Pago != null)
-            {
-                // Asumimos que el pago se realiza en físico
-                pago = new Pago
-                {
-                    Monto = dto.Pago.Monto,
-                    EstadoPago = EstadoPago.Confirmado, // Asumimos que el pago se confirma al momento
-                    MetodoPago = "Efectivo", // O el método que desees usar para pagos en físico
-                    Creado = DateTime.UtcNow
-                };
-            }
-
-            var (success, message, reservaCreada) = await _reservaService.CrearReservaAsync(reserva, dto.ServicioIds, pago);
+            // Llamamos al método actualizado que ya no espera lista de servicios
+            var (success, message, reservaCreada) = await _reservaService.CrearReservaAsync(dto);
 
             if (!success || reservaCreada == null)
                 return BadRequest(new { message });
 
-            // Cargar explícitamente relaciones si quieres, o devolver reservaCreada directamente si ya está cargada
             return CreatedAtAction(nameof(GetReserva), new { id = reservaCreada.Id }, reservaCreada);
+        }
+        [Authorize(Roles = "CLIENTE")]
+        [HttpGet("Usuario/{userId}/Todas")]
+        public async Task<IActionResult> GetReservasByUserId(string userId)
+        {
+            var (success, message, reservas) = await _reservaService.GetReservasByUserIdAsync(userId);
+
+            if (!success || reservas == null)
+                return NotFound(new { message });
+
+            return Ok(reservas);
         }
 
 

@@ -18,8 +18,7 @@ namespace bookme_backend.BLL.Interfaces
 
         Task<(bool Success, string Message, byte[]? ImageBytes, string ContentType)> GetNegocioImagenAsync(int negocioId);
         Task<(bool Success, string Message, List<NegocioCardCliente> Negocios)> GetNegociosParaClienteAsync(Ubicacion? posicionUsuario);
-
-
+        Task<(bool Success, string Message, NegocioCardCliente? Negocio)> GetNegocioParaClienteAsync(int negocioId, Ubicacion? ubicacionUser);
 
 
 

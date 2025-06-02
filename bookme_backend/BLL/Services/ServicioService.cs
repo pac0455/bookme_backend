@@ -49,21 +49,17 @@ namespace bookme_backend.Services
                 if (!negocioExiste)
                     return (false, $"El negocio con ID {negocioId} no existe.", new List<Servicio>());
 
-                // Obtenemos las reservas del negocio, incluyendo los servicios reservados
+                // Obtenemos las reservas del negocio, incluyendo el servicio reservado
                 var reservas = await _reservaRepo.GetWhereWithIncludesAsync(
                     r => r.NegocioId == negocioId,
-                    r => r.ReservasServicios
+                    r => r.Servicio
                 );
-
-
-
 
                 // Extraemos los servicios de todas las reservas, eliminamos duplicados y filtramos nulos
                 var serviciosReservados = reservas
-                    .SelectMany(r => r.ReservasServicios)    // Aplanamos la colección de ReservasServicios para obtener todos los servicios reservados
-                    .Select(rs => rs.Servicio)               // Seleccionamos el servicio de cada ReservasServicio
-                    .Where(s => s != null)                   // Filtramos servicios nulos (por seguridad)
-                    .DistinctBy(s => s.Id)                   // Eliminamos duplicados basados en el Id del servicio
+                    .Select(r => r.Servicio)     // Obtenemos el servicio directamente de la reserva
+                    .Where(s => s != null)       // Filtramos servicios nulos
+                    .DistinctBy(s => s.Id)       // Eliminamos duplicados
                     .ToList();
 
                 return (true, "Servicios obtenidos correctamente.", serviciosReservados);
@@ -289,11 +285,11 @@ namespace bookme_backend.Services
         {
             try
             {
-                // Obtener negocio con categoría y valoraciones (usando método existente)
+                // Obtener negocio con categoría y valoraciones
                 var negocios = await _negocioRepo.GetWhereWithIncludesAsync(
                     n => n.Id == negocioId,
                     n => n.Categoria,
-                    n => n.ResenasNegocio
+                    n => n.Valoraciones // Antes ResenasNegocio, ahora Valoraciones
                 );
 
                 var negocio = negocios.FirstOrDefault();
@@ -302,15 +298,14 @@ namespace bookme_backend.Services
                     return (false, $"El negocio con ID {negocioId} no existe.", new List<ServicioDetalleDto>());
 
                 // Calcular promedio y total de valoraciones del negocio
-                var valoraciones = negocio.ResenasNegocio.ToList();
+                var valoraciones = negocio.Valoraciones.ToList();
                 double promedio = valoraciones.Any() ? valoraciones.Average(v => v.Puntuacion) : 0.0;
                 int totalValoraciones = valoraciones.Count;
 
-                // Obtener servicios del negocio (usando método con include existente)
+                // Obtener servicios del negocio
                 var servicios = await _servicioRepo.GetWhereAsync(
                     s => s.NegocioId == negocioId,
                     query => query
-                        .Include(s => s.ReservasServicios)
                         .Include(s => s.Negocio)
                             .ThenInclude(n => n.Categoria)
                         .AsNoTracking()
@@ -319,7 +314,10 @@ namespace bookme_backend.Services
                 if (servicios == null || servicios.Count == 0)
                     return (true, $"No se encontraron servicios para el negocio con ID {negocioId}.", new List<ServicioDetalleDto>());
 
-                // Proyectar a DTO
+                // Obtener todas las reservas del negocio (para contar reservas por servicio)
+                var reservas = await _reservaRepo.GetWhereAsync(r => r.NegocioId == negocioId);
+
+                // Proyectar a DTO con conteo de reservas por servicio
                 var detalles = servicios.Select(s => new ServicioDetalleDto
                 {
                     Id = s.Id,
@@ -329,10 +327,11 @@ namespace bookme_backend.Services
                     DuracionMinutos = s.DuracionMinutos,
                     Precio = s.Precio,
                     NegocioNombre = negocio.Nombre ?? string.Empty,
-                    Categoria = negocio.Categoria?.Nombre ?? "Sin categoría",
-                    ValoracionPromedio = promedio,
-                    NumeroValoraciones = totalValoraciones,
-                    NumeroReservas = s.ReservasServicios?.Count ?? 0
+                    Categoria = negocio.Categoria?.Nombre ?? "Sin categoría", // Propiedad 'categoria' en minúscula según tabla
+                    ValoracionPromedioNegocio = promedio, // propiedad renombrada en DTO
+                    NumeroValoracionesNegocio = totalValoraciones, // propiedad renombrada en DTO
+                    NumeroReservas = reservas.Count(r => r.ServicioId == s.Id),
+                    ImagenUrl = s.ImagenUrl
                 }).ToList();
 
                 return (true, "Servicios detallados obtenidos correctamente.", detalles);
@@ -343,6 +342,7 @@ namespace bookme_backend.Services
                 return (false, $"Error al obtener servicios detallados: {ex.Message}", new List<ServicioDetalleDto>());
             }
         }
+
 
         /// <summary>
         /// Elimina un servicio dado su ID.
@@ -369,5 +369,72 @@ namespace bookme_backend.Services
                 return (false, $"Error al eliminar servicio: {ex.Message}");
             }
         }
+
+        public async Task<(bool Success, string Message, List<ServicioDetalleDto> Servicios)> GetServiciosDetalleAsync()
+        {
+            try
+            {
+                // Obtener todos los negocios con categoría y valoraciones
+                var negocios = await _negocioRepo.GetWhereWithIncludesAsync(
+                    n => true,
+                    n => n.Categoria,
+                    n => n.Valoraciones
+                );
+
+                // Obtener todos los servicios con negocio y categoría (incluidos)
+                var servicios = await _servicioRepo.GetWhereAsync(
+                    s => true,
+                    query => query
+                        .Include(s => s.Negocio)
+                            .ThenInclude(n => n.Categoria)
+                );
+
+
+                // Obtener todas las reservas
+                var reservas = await _reservaRepo.GetAllAsync();
+
+                // Mapear valoraciones por negocio
+                var negocioValoracionesMap = negocios.ToDictionary(
+                    n => n.Id,
+                    n => new
+                    {
+                        Promedio = n.Valoraciones.Any() ? n.Valoraciones.Average(v => v.Puntuacion) : 0.0,
+                        Total = n.Valoraciones.Count
+                    }
+                );
+
+                var detalles = servicios.Select(s =>
+                {
+                    var negocioId = s.NegocioId;
+                    var valoracion = negocioValoracionesMap.ContainsKey(negocioId)
+                        ? negocioValoracionesMap[negocioId]
+                        : new { Promedio = 0.0, Total = 0 };
+
+                    return new ServicioDetalleDto
+                    {
+                        Id = s.Id,
+                        NegocioId = negocioId,
+                        Nombre = s.Nombre ?? string.Empty,
+                        Descripcion = s.Descripcion ?? string.Empty,
+                        DuracionMinutos = s.DuracionMinutos,
+                        Precio = s.Precio,
+                        NegocioNombre = s.Negocio?.Nombre ?? string.Empty,
+                        Categoria = s.Negocio?.Categoria?.Nombre ?? "Sin categoría",
+                        ValoracionPromedioNegocio = valoracion.Promedio,
+                        NumeroValoracionesNegocio = valoracion.Total,
+                        NumeroReservas = reservas.Count(r => r.ServicioId == s.Id),
+                        ImagenUrl = s.ImagenUrl
+                    };
+                }).ToList();
+
+                return (true, "Servicios detallados obtenidos correctamente.", detalles);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener servicios detallados");
+                return (false, $"Error al obtener servicios detallados: {ex.Message}", new List<ServicioDetalleDto>());
+            }
+        }
+
     }
 }

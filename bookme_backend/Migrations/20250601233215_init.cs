@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
+#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
+
 namespace bookme_backend.Migrations
 {
     /// <inheritdoc />
@@ -204,8 +206,8 @@ namespace bookme_backend.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     id_negocio = table.Column<int>(type: "int", nullable: false),
                     dia_semana = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    hora_inicio = table.Column<TimeSpan>(type: "time", nullable: false),
-                    hora_fin = table.Column<TimeSpan>(type: "time", nullable: false)
+                    hora_inicio = table.Column<TimeOnly>(type: "time", nullable: false),
+                    hora_fin = table.Column<TimeOnly>(type: "time", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -213,38 +215,6 @@ namespace bookme_backend.Migrations
                     table.ForeignKey(
                         name: "FK_horarios_negocios_id_negocio",
                         column: x => x.id_negocio,
-                        principalTable: "negocios",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "reservas",
-                columns: table => new
-                {
-                    id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    negocio_id = table.Column<int>(type: "int", nullable: false),
-                    usuario_id = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    fecha = table.Column<DateOnly>(type: "date", nullable: true),
-                    hora_inicio = table.Column<TimeOnly>(type: "time", nullable: true),
-                    hora_fin = table.Column<TimeOnly>(type: "time", nullable: true),
-                    estado = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    comentario_cliente = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    fecha_creacion = table.Column<DateTime>(type: "datetime", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_reservas", x => x.id);
-                    table.ForeignKey(
-                        name: "FK_reservas_AspNetUsers_usuario_id",
-                        column: x => x.usuario_id,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_reservas_negocios_negocio_id",
-                        column: x => x.negocio_id,
                         principalTable: "negocios",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
@@ -259,8 +229,8 @@ namespace bookme_backend.Migrations
                     negocio_id = table.Column<int>(type: "int", nullable: false),
                     nombre = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
                     descripcion = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    duracion_minutos = table.Column<int>(type: "int", nullable: true),
-                    precio = table.Column<decimal>(type: "decimal(10,2)", nullable: true),
+                    duracion_minutos = table.Column<int>(type: "int", nullable: false),
+                    precio = table.Column<decimal>(type: "decimal(10,2)", nullable: false),
                     imagen_url = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true)
                 },
                 constraints: table =>
@@ -303,32 +273,70 @@ namespace bookme_backend.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "valoraciones_negocio",
+                name: "Valoraciones",
                 columns: table => new
                 {
                     id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     negocio_id = table.Column<int>(type: "int", nullable: false),
                     usuario_id = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    puntuacion = table.Column<int>(type: "int", nullable: false),
+                    puntuacion = table.Column<double>(type: "float", nullable: false),
                     comentario = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     fecha_valoracion = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_valoraciones_negocio", x => x.id);
+                    table.PrimaryKey("PK_Valoraciones", x => x.id);
                     table.ForeignKey(
-                        name: "FK_valoraciones_negocio_AspNetUsers_usuario_id",
+                        name: "FK_Valoraciones_AspNetUsers_usuario_id",
+                        column: x => x.usuario_id,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Valoraciones_negocios_negocio_id",
+                        column: x => x.negocio_id,
+                        principalTable: "negocios",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "reservas",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    negocio_id = table.Column<int>(type: "int", nullable: false),
+                    usuario_id = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    fecha = table.Column<DateOnly>(type: "date", nullable: false),
+                    hora_inicio = table.Column<TimeOnly>(type: "time", nullable: false),
+                    hora_fin = table.Column<TimeOnly>(type: "time", nullable: false),
+                    estado = table.Column<int>(type: "int", maxLength: 255, nullable: false),
+                    fecha_creacion = table.Column<DateTime>(type: "datetime", nullable: true),
+                    servicio_id = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_reservas", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_reservas_AspNetUsers_usuario_id",
                         column: x => x.usuario_id,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_valoraciones_negocio_negocios_negocio_id",
+                        name: "FK_reservas_negocios_negocio_id",
                         column: x => x.negocio_id,
                         principalTable: "negocios",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_reservas_servicios_servicio_id",
+                        column: x => x.servicio_id,
+                        principalTable: "servicios",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -340,14 +348,10 @@ namespace bookme_backend.Migrations
                     reserva_id = table.Column<int>(type: "int", nullable: false),
                     monto = table.Column<decimal>(type: "decimal(10,2)", nullable: true),
                     fecha_pago = table.Column<DateTime>(type: "datetime", nullable: true),
-                    estado_pago = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    metodo_pago = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    id_transaccion_externa = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    estado_pago = table.Column<int>(type: "int", nullable: false),
+                    metodo_pago = table.Column<int>(type: "int", nullable: false),
                     respuesta_pasarela = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    moneda = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: true),
-                    reembolsado = table.Column<bool>(type: "bit", nullable: true),
-                    creado = table.Column<DateTime>(type: "datetime", nullable: true),
-                    actualizado = table.Column<DateTime>(type: "datetime", nullable: true)
+                    moneda = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -360,59 +364,36 @@ namespace bookme_backend.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            migrationBuilder.CreateTable(
-                name: "valoraciones",
-                columns: table => new
+            migrationBuilder.InsertData(
+                table: "categoria",
+                columns: new[] { "id", "categoria" },
+                values: new object[,]
                 {
-                    id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    reserva_id = table.Column<int>(type: "int", nullable: false),
-                    usuario_id = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    puntuacion = table.Column<int>(type: "int", nullable: true),
-                    comentario = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    fecha_valoracion = table.Column<DateTime>(type: "datetime", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_valoraciones", x => x.id);
-                    table.ForeignKey(
-                        name: "FK_valoraciones_AspNetUsers_usuario_id",
-                        column: x => x.usuario_id,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_valoraciones_reservas_reserva_id",
-                        column: x => x.reserva_id,
-                        principalTable: "reservas",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "reservas_servicios",
-                columns: table => new
-                {
-                    id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    reserva_id = table.Column<int>(type: "int", nullable: false),
-                    servicio_id = table.Column<int>(type: "int", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_reservas_servicios", x => x.id);
-                    table.ForeignKey(
-                        name: "FK_reservas_servicios_reservas_reserva_id",
-                        column: x => x.reserva_id,
-                        principalTable: "reservas",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_reservas_servicios_servicios_servicio_id",
-                        column: x => x.servicio_id,
-                        principalTable: "servicios",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
+                    { 1, "Clínica" },
+                    { 2, "Tienda" },
+                    { 3, "Gimnasio" },
+                    { 4, "Salón de Belleza" },
+                    { 5, "Veterinaria" },
+                    { 6, "Restaurante" },
+                    { 7, "Cafetería" },
+                    { 8, "Barbería" },
+                    { 9, "Psicología" },
+                    { 10, "Nutrición" },
+                    { 11, "Fisioterapia" },
+                    { 12, "Podología" },
+                    { 13, "Asesoría" },
+                    { 14, "Consultoría" },
+                    { 15, "Servicios Jurídicos" },
+                    { 16, "Clases Particulares" },
+                    { 17, "Academia de Idiomas" },
+                    { 18, "Tatuajes y Piercings" },
+                    { 19, "Centro Estético" },
+                    { 20, "Terapias Alternativas" },
+                    { 21, "Cuidado de Mascotas" },
+                    { 22, "Mecánica" },
+                    { 23, "Electricista" },
+                    { 24, "Fontanero" },
+                    { 25, "Fotografía" }
                 });
 
             migrationBuilder.CreateIndex(
@@ -487,7 +468,8 @@ namespace bookme_backend.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_pagos_reserva_id",
                 table: "pagos",
-                column: "reserva_id");
+                column: "reserva_id",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_reservas_negocio_id",
@@ -495,19 +477,14 @@ namespace bookme_backend.Migrations
                 column: "negocio_id");
 
             migrationBuilder.CreateIndex(
+                name: "IX_reservas_servicio_id",
+                table: "reservas",
+                column: "servicio_id");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_reservas_usuario_id",
                 table: "reservas",
                 column: "usuario_id");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_reservas_servicios_reserva_id",
-                table: "reservas_servicios",
-                column: "reserva_id");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_reservas_servicios_servicio_id",
-                table: "reservas_servicios",
-                column: "servicio_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_servicios_negocio_id",
@@ -525,23 +502,13 @@ namespace bookme_backend.Migrations
                 column: "id_usuario");
 
             migrationBuilder.CreateIndex(
-                name: "IX_valoraciones_reserva_id",
-                table: "valoraciones",
-                column: "reserva_id");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_valoraciones_usuario_id",
-                table: "valoraciones",
-                column: "usuario_id");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_valoraciones_negocio_negocio_id",
-                table: "valoraciones_negocio",
+                name: "IX_Valoraciones_negocio_id",
+                table: "Valoraciones",
                 column: "negocio_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_valoraciones_negocio_usuario_id",
-                table: "valoraciones_negocio",
+                name: "IX_Valoraciones_usuario_id",
+                table: "Valoraciones",
                 column: "usuario_id");
         }
 
@@ -570,28 +537,22 @@ namespace bookme_backend.Migrations
                 name: "pagos");
 
             migrationBuilder.DropTable(
-                name: "reservas_servicios");
-
-            migrationBuilder.DropTable(
                 name: "suscripciones");
 
             migrationBuilder.DropTable(
-                name: "valoraciones");
-
-            migrationBuilder.DropTable(
-                name: "valoraciones_negocio");
+                name: "Valoraciones");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
-
-            migrationBuilder.DropTable(
-                name: "servicios");
 
             migrationBuilder.DropTable(
                 name: "reservas");
 
             migrationBuilder.DropTable(
                 name: "AspNetUsers");
+
+            migrationBuilder.DropTable(
+                name: "servicios");
 
             migrationBuilder.DropTable(
                 name: "negocios");

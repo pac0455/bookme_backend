@@ -3,11 +3,11 @@
     public class PagoCreateDTO
     {
         public decimal Monto { get; set; }
-        public string EstadoPago { get; set; } = null!;
-        public string MetodoPago { get; set; } = null!;
-        public string? IdTransaccionExterna { get; set; }
-        public string? RespuestaPasarela { get; set; }
-        public string? Moneda { get; set; }
-    }
+        public MetodoPago MetodoPago { get; set; }
+        public string? Moneda { get; set; } = "EUR"; // Valor por defecto
 
+        // Campos opcionales que el backend puede asignar
+        public EstadoPago? EstadoPago { get; set; } // El backend lo asignará según resultado
+        public string? RespuestaPasarela { get; set; } // Lo llenará la pasarela simulada
+    }
 }

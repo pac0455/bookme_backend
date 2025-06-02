@@ -146,7 +146,7 @@ namespace bookme_backend.BLL.Services
                 var reservas = await _reservaRepo.GetWhereAsync(r =>
                     r.NegocioId == negocioId &&
                     r.Fecha == date &&
-                    r.Estado.Equals(EstadoReserva.Confirmada)
+                    r.Estado.Equals(EstadoReserva.Pendiente)
                 );
                 _logger.LogInformation("Reservas obtenidas: {Count}", reservas.Count);
 

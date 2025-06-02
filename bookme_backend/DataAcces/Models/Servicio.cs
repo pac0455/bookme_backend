@@ -33,6 +33,7 @@ public partial class Servicio
     [InverseProperty("Servicios")]
     public virtual Negocio Negocio { get; set; } = null!;
 
+    // Aquí agregamos la propiedad que falta
     [InverseProperty("Servicio")]
-    public virtual ICollection<ReservasServicio> ReservasServicios { get; set; } = new List<ReservasServicio>();
+    public virtual ICollection<Reserva> Reservas { get; set; } = new List<Reserva>();
 }

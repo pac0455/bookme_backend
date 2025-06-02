@@ -12,11 +12,14 @@
         public string NegocioNombre { get; set; } = string.Empty;
         public string Categoria { get; set; } = "Sin categoría";
 
-        public double ValoracionPromedio { get; set; }
-        public int NumeroValoraciones { get; set; }
+        // Valoraciones agregadas del negocio
+        public double ValoracionPromedioNegocio { get; set; }
+        public int NumeroValoracionesNegocio { get; set; }
+
         public int NumeroReservas { get; set; }
         public string? ImagenUrl { get; set; }
     }
+
 
 
 }

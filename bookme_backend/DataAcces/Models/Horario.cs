@@ -30,5 +30,4 @@ namespace bookme_backend.DataAcces.Models
         [InverseProperty("HorariosAtencion")]
         public virtual Negocio? Negocio { get; set; }
     }
-
 }

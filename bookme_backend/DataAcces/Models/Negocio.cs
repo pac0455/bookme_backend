@@ -54,7 +54,7 @@ public partial class Negocio
     public virtual ICollection<Suscripcion> Suscripciones { get; set; } = new List<Suscripcion>();
     [JsonIgnore]
     [InverseProperty("Negocio")]
-    public virtual ICollection<ValoracionNegocio> ResenasNegocio { get; set; } = new List<ValoracionNegocio>();
+    public virtual ICollection<Valoracion> Valoraciones { get; set; } = new List<Valoracion>();
     public override string ToString()
     {
         return $"Negocio {{ " +

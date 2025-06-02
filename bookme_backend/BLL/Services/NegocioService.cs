@@ -1,4 +1,5 @@
-﻿using System.Net.Http;
+﻿using System.Globalization;
+using System.Net.Http;
 using System.Text.Json;
 using bookme_backend.BLL.Interfaces;
 using bookme_backend.DataAcces.DTO;
@@ -94,14 +95,11 @@ namespace bookme_backend.BLL.Services
                     return (false, $"El negocio con ID {negocioId} no existe.", new List<ReservaDetalladaDto>());
                 }
 
-                // Traer los datos con Includes anidados
+                // Traer los datos con Includes anidados, incluyendo Servicio
                 var reservas = await _reservaRepo.GetWhereAsync(
                     r => r.NegocioId == negocioId,
-                    q => q
-                        .Include(r => r.ReservasServicios).ThenInclude(rs => rs.Servicio)
-                        .Include(r => r.Pagos)
+                    q => q.Include(r => r.Servicio)    // Incluimos el Servicio
                 );
-
 
                 // Mapear las reservas a DTO
                 var reservasDetalladas = reservas.Select(r => new ReservaDetalladaDto
@@ -109,22 +107,26 @@ namespace bookme_backend.BLL.Services
                     ReservaId = r.Id,
                     Fecha = r.Fecha,
                     Estado = r.Estado,
-                    ComentarioCliente = r.ComentarioCliente,
-                    EstadoPagoGeneral = r.Pagos.FirstOrDefault()?.EstadoPago ?? EstadoPago.Pendiente,
-                    Servicios = r.ReservasServicios.Select(rs => new ServicioConPagoDto
-                    {
-                        Nombre = rs.Servicio?.Nombre,
-                        Precio = (double?)rs.Servicio?.Precio,
-                        Pago = r.Pagos.FirstOrDefault() != null
-                            ? new PagoDto
+                    EstadoPagoGeneral = r.Pago?.EstadoPago ?? EstadoPago.Pendiente,
+                    Servicios = r.Servicio != null
+                        ? new List<ServicioConPagoDto>
                             {
-                                Monto = (double)r.Pagos.First().Monto,
-                                Estado = r.Pagos.First().EstadoPago,
-                                Metodo = r.Pagos.First().MetodoPago,
-                                FechaPago = r.Pagos.First().FechaPago ?? DateTime.MinValue
+                        new ServicioConPagoDto
+                        {
+                            Nombre = r.Servicio.Nombre,
+                            Precio = (double?)r.Servicio.Precio,
+                            Pago = r.Pago != null
+                                ? new PagoDto
+                                {
+                                    Monto = (double)r.Pago.Monto,
+                                    Estado = r.Pago.EstadoPago,
+                                    Metodo = r.Pago.MetodoPago,
+                                    FechaPago = r.Pago.FechaPago ?? DateTime.MinValue
+                                }
+                                : null
+                        }
                             }
-                            : null
-                    }).ToList()
+                        : new List<ServicioConPagoDto>()
                 }).ToList();
 
                 return (true, "Reservas detalladas obtenidas correctamente.", reservasDetalladas);
@@ -222,16 +224,15 @@ namespace bookme_backend.BLL.Services
                     return (false, $"El negocio con ID {negocioId} no existe.", new List<Servicio>());
                 }
 
-                // Cargamos reservas con servicios incluidos
+                // Cargamos reservas con servicio incluido
                 var reservas = await _reservaRepo.GetWhereWithIncludesAsync(
                     r => r.NegocioId == negocioId,
-                    r => r.ReservasServicios.Select(rs => rs.Servicio)
+                    r => r.Servicio
                 );
 
-                // Extraemos todos los servicios reservados
+                // Extraemos todos los servicios reservados (único por reserva)
                 var serviciosReservados = reservas
-                    .SelectMany(r => r.ReservasServicios)
-                    .Select(rs => rs.Servicio)
+                    .Select(r => r.Servicio)
                     .Where(s => s != null) // por seguridad
                     .DistinctBy(s => s.Id) // evitar duplicados
                     .ToList();
@@ -400,9 +401,7 @@ namespace bookme_backend.BLL.Services
                 var reservas = await _reservaRepo.GetWhereWithIncludesAsync(
                     r => r.NegocioId == negocioId,
                     r => r.Usuario,
-                    r => r.ReservasServicios,
-                    r => r.Pagos,
-                    r => r.Valoraciones
+                    r => r.Pago
                 );
 
                 return (true, "Reservas obtenidas correctamente.", reservas.ToList());
@@ -421,7 +420,8 @@ namespace bookme_backend.BLL.Services
                 var negocios = await _negocioRepo.GetWhereWithIncludesAsync(
                     n => n.Activo ?? false,
                     n => n.Categoria,
-                    n => n.ResenasNegocio
+                    n => n.HorariosAtencion,
+                    n => n.Valoraciones
                 );
                 var negociosDto = new List<NegocioCardCliente>();
 
@@ -440,8 +440,8 @@ namespace bookme_backend.BLL.Services
                         Descripcion = n.Descripcion,
                         Categoria = n.Categoria?.Nombre ?? "Sin categoría",
                         Direccion = n.Direccion,
-                        Rating = n.ResenasNegocio.Any() ? (float)n.ResenasNegocio.Average(r => r.Puntuacion) : 0f,
-                        ReviewCount = n.ResenasNegocio.Count,
+                        Rating = n.Valoraciones.Any() ? (float)n.Valoraciones.Average(r => r.Puntuacion) : 0f,
+                        ReviewCount = n.Valoraciones.Count,
                         IsActive = n.Activo ?? false,
                         IsOpen = EstaAbierto(n.HorariosAtencion),
                         Distancia = distancia,
@@ -461,6 +461,58 @@ namespace bookme_backend.BLL.Services
                 return (false, $"Error al obtener negocios: {ex.Message}", new List<NegocioCardCliente>());
             }
         }
+
+
+        public async Task<(bool Success, string Message, NegocioCardCliente? Negocio)> GetNegocioParaClienteAsync(int negocioId, Ubicacion? ubicacionUser)
+        {
+            try
+            {
+                // Obtener el negocio activo por ID, con categoría y valoraciones
+                var negocios = await _negocioRepo.GetWhereWithIncludesAsync(
+                    n => n.Id == negocioId && (n.Activo ?? false),
+                    n => n.Categoria,
+                    n => n.HorariosAtencion,
+                    n => n.Valoraciones
+                );
+
+                var negocio = negocios.FirstOrDefault();
+
+                if (negocio == null)
+                {
+                    return (false, "Negocio no encontrado", null);
+                }
+
+                //var distancia = await CalcularDistanciaConGoogleAsync(
+                //    ubicacionUser,
+                //    new Ubicacion { Latitud = negocio.Latitud, Longitud = negocio.Longitud }
+                //);
+                var distancia = new Random().NextDouble(); // Simulación
+
+                var negocioDto = new NegocioCardCliente
+                {
+                    Id = negocio.Id,
+                    Nombre = negocio.Nombre,
+                    Descripcion = negocio.Descripcion,
+                    Categoria = negocio.Categoria?.Nombre ?? "Sin categoría",
+                    Direccion = negocio.Direccion,
+                    Rating = negocio.Valoraciones.Any() ? (float)negocio.Valoraciones.Average(r => r.Puntuacion) : 0f,
+                    ReviewCount = negocio.Valoraciones.Count,
+                    IsActive = negocio.Activo ?? false,
+                    IsOpen = EstaAbierto(negocio.HorariosAtencion),
+                    Distancia = distancia,
+                    Latitud = negocio.Latitud,
+                    Longitud = negocio.Longitud
+                };
+
+                return (true, "Negocio obtenido correctamente", negocioDto);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener negocio para cliente");
+                return (false, $"Error al obtener negocio: {ex.Message}", null);
+            }
+        }
+
         public async Task<double?> CalcularDistanciaConGoogleAsync(Ubicacion origen, Ubicacion destino)
         {
             if (origen?.Latitud == null || origen?.Longitud == null ||
@@ -489,14 +541,12 @@ namespace bookme_backend.BLL.Services
             return Math.Round(metros / 1000.0, 2); // en kilómetros
         }
 
-
-
         // Ejemplo simple de método para saber si negocio está abierto según horarios
+        // Método para saber si el negocio está abierto según horarios
         private bool EstaAbierto(ICollection<Horario> horarios)
         {
-            var diaSemanaActual = DateTime.Now.DayOfWeek.ToString(); // Ej: "Monday"
+            var diaSemanaActual = DateTime.Now.DayOfWeek.ToString();
 
-            // Mapea "Monday" -> "Lunes" (porque en la DB estás usando español)
             var diaSemanaMap = new Dictionary<string, string>
             {
                 ["Monday"] = "Lunes",
@@ -511,15 +561,55 @@ namespace bookme_backend.BLL.Services
             if (!diaSemanaMap.TryGetValue(diaSemanaActual, out var diaSemanaDb))
                 return false;
 
+            string Normalizar(string texto) =>
+                texto.Normalize(System.Text.NormalizationForm.FormD)
+                     .Where(c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
+                     .Aggregate("", (s, c) => s + c)
+                     .ToLower();
+
+            var diaNormalizado = Normalizar(diaSemanaDb);
             var ahora = DateTime.Now.TimeOfDay;
+            _logger.LogDebug("Hora actual: {HoraActual}", ahora);
 
-            return horarios
-              .Where(h => h.DiaSemana.Equals(diaSemanaDb, StringComparison.OrdinalIgnoreCase))
-              .Any(h =>
-                  ahora >= h.HoraInicio.ToTimeSpan() &&
-                  ahora <= h.HoraFin.ToTimeSpan()
-              );
+            foreach (var h in horarios.Where(h => Normalizar(h.DiaSemana) == diaNormalizado))
+            {
+                _logger.LogDebug("Horario DB - Día: {Dia}, HoraInicio: {Inicio}, HoraFin: {Fin}",
+                    h.DiaSemana, h.HoraInicio, h.HoraFin);
 
+                var inicio = new TimeSpan(h.HoraInicio.Hour, h.HoraInicio.Minute, h.HoraInicio.Second);
+                var fin = new TimeSpan(h.HoraFin.Hour, h.HoraFin.Minute, h.HoraFin.Second);
+
+                _logger.LogDebug("Horario convertido a TimeSpan - Inicio: {InicioTS}, Fin: {FinTS}", inicio, fin);
+                _logger.LogDebug("Comparando hora actual {Ahora} con rango {Inicio} - {Fin}", ahora, inicio, fin);
+                if (ahora >= inicio && ahora <= fin)
+                {
+                    _logger.LogDebug("Horario está abierto");
+                }
+                else
+                {
+                    _logger.LogDebug("Horario cerrado");
+                }
+            }
+
+            var abiertos = horarios
+                .Where(h => Normalizar(h.DiaSemana) == diaNormalizado)
+                .Any(h =>
+                {
+                    var inicio = new TimeSpan(h.HoraInicio.Hour, h.HoraInicio.Minute, h.HoraInicio.Second);
+                    var fin = new TimeSpan(h.HoraFin.Hour, h.HoraFin.Minute, h.HoraFin.Second);
+                    return ahora >= inicio && ahora <= fin;
+                });
+
+            _logger.LogDebug("Comparando día normalizado: {DiaNormalizado}", diaNormalizado);
+            foreach (var h in horarios)
+            {
+                _logger.LogDebug("Horario DB - Día: {Dia}, HoraInicio: {Inicio}, HoraFin: {Fin}",
+                    h.DiaSemana, h.HoraInicio, h.HoraFin);
+            }
+            _logger.LogDebug("¿Negocio abierto (tras comparar días normalizados y horas)?: {Abierto}", abiertos);
+
+            return abiertos;
         }
+
     }
 }
