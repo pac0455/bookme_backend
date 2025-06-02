@@ -51,5 +51,5 @@ public partial class Reserva
     public virtual Servicio Servicio { get; set; } = null!;
 
     [InverseProperty("Reserva")]
-    public virtual Pago? Pago { get; set; }
+    public virtual Pago Pago { get; set; }
 }

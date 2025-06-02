@@ -100,6 +100,7 @@ namespace bookme_backend.UI
 
             return CreatedAtAction(nameof(GetReserva), new { id = reservaCreada.Id }, reservaCreada);
         }
+
         [Authorize(Roles = "CLIENTE")]
         [HttpGet("Usuario/{userId}/Todas")]
         public async Task<IActionResult> GetReservasByUserId(string userId)
@@ -114,20 +115,16 @@ namespace bookme_backend.UI
 
 
 
-        // DELETE: api/Reservas/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteReserva(int id)
+        [HttpPut("Cancelar/{id}")]
+        //[Authorize(Roles = "NEGOCIO,CLIENTE")]
+        public async Task<IActionResult> CancelarReservaPorNegocio(int id)
         {
-            var reserva = await _context.Reservas.FindAsync(id);
-            if (reserva == null)
-            {
-                return NotFound();
-            }
+            var (success, message, reservaCancelada) = await _reservaService.CancelarReservaByNegocioId(id);
 
-            _context.Reservas.Remove(reserva);
-            await _context.SaveChangesAsync();
+            if (!success)
+                return BadRequest(new { message });
 
-            return NoContent();
+            return Ok( reservaCancelada);
         }
     }
 }

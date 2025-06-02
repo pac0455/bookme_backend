@@ -287,5 +287,53 @@ namespace bookme_backend.BLL.Services
 
             return (true, "Reservas del usuario encontradas", reservaDtos);
         }
+        public async Task<(bool Success, string Message, ReservaResponseDTO? reservas)> CancelarReservaByNegocioId(int reservaId)
+        {
+            var reserva = await _reservaRepo.GetByIdAsync(reservaId);
+            if (reserva == null)
+                return (false, "Reserva no encontrada.", null);
+
+            if (reserva.Estado == EstadoReserva.Cancelada)
+                return (false, "La reserva ya está cancelada.", null);
+
+            if (reserva.Estado == EstadoReserva.Finalizada)
+                return (false, "No se puede cancelar una reserva finalizada.", null);
+
+            reserva.Estado = EstadoReserva.Cancelada;
+            _reservaRepo.Update(reserva);
+            await _reservaRepo.SaveChangesAsync();
+
+            var servicio = await _servicioRepo.GetByIdAsync(reserva.ServicioId);
+
+            var pagos = await _pagoRepo.GetWhereAsync(p => p.ReservaId == reservaId);
+            var pago = pagos.FirstOrDefault();
+
+            var reservaDto = new ReservaResponseDTO
+            {
+                Id = reserva.Id,
+                NegocioId = reserva.NegocioId,
+                UsuarioId = reserva.UsuarioId,
+                Fecha = reserva.Fecha,
+                HoraInicio = reserva.HoraInicio,
+                HoraFin = reserva.HoraFin,
+                Estado = reserva.Estado,
+                FechaCreacion = reserva.FechaCreacion,
+                ServicioId = reserva.ServicioId,
+                Servicio = new ServicioDTO
+                {
+                    Id = servicio.Id,
+                    Nombre = servicio.Nombre
+                },
+                Pago = pago != null ? new PagoDTO
+                {
+                    Id = pago.Id,
+                    Monto = pago.Monto ?? 0,
+                    EstadoPago = pago.EstadoPago,
+                    MetodoPago = pago.MetodoPago
+                } : null
+            };
+
+            return (true, "Reserva cancelada correctamente.", reservaDto);
+        }
     }
 }
