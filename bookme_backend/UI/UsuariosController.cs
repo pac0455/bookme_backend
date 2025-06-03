@@ -2,6 +2,7 @@
 using bookme_backend.DataAcces.DTO;
 using bookme_backend.BLL.Interfaces;
 using bookme_backend.BLL.Exceptions;
+using bookme_backend.DataAcces.DTO.Usuario;
 
 namespace bookme_backend.UI.Controllers
 {

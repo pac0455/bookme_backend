@@ -3,6 +3,7 @@ using bookme_backend.BLL.Exceptions;
 using bookme_backend.BLL.Interfaces;
 using bookme_backend.DataAcces.DTO;
 using bookme_backend.DataAcces.DTO.Pago;
+using bookme_backend.DataAcces.DTO.Usuario;
 using bookme_backend.DataAcces.Models;
 using bookme_backend.DataAcces.Repositories.Interfaces;
 using bookme_backend.UI.Controllers;
@@ -492,7 +493,7 @@ namespace bookme_backend.BLL.Services
             throw new NotImplementedException();
         }
 
-        public Task<(bool Success, string Message, List<UsuarioReservaEstadisticaDto> Data)> GetEstadisticasUsuariosPorNegocioAsync(int negocioId)
+        public Task<(bool Success, string Message, List<ClienteResumenDto> Data)> GetEstadisticasUsuariosPorNegocioAsync(int negocioId)
         {
             throw new NotImplementedException();
         }

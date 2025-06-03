@@ -1,6 +1,6 @@
 ﻿using bookme_backend.DataAcces.Models;
 
-namespace bookme_backend.DataAcces.DTO
+namespace bookme_backend.DataAcces.DTO.Usuario
 {
     public class LoginResultDTO
     {
