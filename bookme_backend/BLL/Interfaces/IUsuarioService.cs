@@ -19,10 +19,13 @@ namespace bookme_backend.BLL.Interfaces
         Task<(bool Success, string Message)> ResendConfirmationEmailAsync(string email);
         Task<(bool Success, string Message)> ForgotPasswordAsync(string email, string resetPasswordBaseUrl);
         Task<(bool Success, string Message)> ResetPasswordAsync(string email, string token, string newPassword);
-        Task<(bool Success, string Message, List<ClienteResumenDto> Data)> GetEstadisticasUsuariosPorNegocioAsync(int negocioId);
+        Task<(bool Success, string Message, List<ClienteResumenDTO> Data)> GetEstadisticasUsuariosPorNegocioAsync(int negocioId);
         Task<Dictionary<string, string>> ValidarErroresRegistroAsync(RegisterDTO model);
         Task<Dictionary<string, string>> ValidarErroresLoginAsync(string email, string password);
 
         Task<bool> UsuarioTieneServiciosAsync(int usuarioId);
+        Task<(bool Success,UpdateNombreDTO usuarioActualizado, string Message)> UpdateUsuarioNombreAsync(UpdateNombreDTO newUser);
+        Task<(bool Success, string Message)> UpdatePasswordAsync(UpdatePasswordDTO model);
+
     }
 }

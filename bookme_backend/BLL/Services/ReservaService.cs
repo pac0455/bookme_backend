@@ -1,9 +1,11 @@
 ﻿using bookme_backend.BLL.Interfaces;
 using bookme_backend.DataAcces.DTO.Pago;
 using bookme_backend.DataAcces.DTO.Reserva;
+using bookme_backend.DataAcces.DTO.Usuario;
 using bookme_backend.DataAcces.Models;
 using bookme_backend.DataAcces.Repositories.Interfaces;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace bookme_backend.BLL.Services
 {
@@ -16,7 +18,7 @@ namespace bookme_backend.BLL.Services
         private readonly IRepository<Usuario> _usuarioRepo;
 
         private readonly IPasarelaSimulada _pasarelaSimulada;
-       private readonly UserManager<Usuario> _userManager;
+        private readonly UserManager<Usuario> _userManager;
 
         public ReservaService(
             IRepository<Reserva> reservaRepo,
@@ -48,7 +50,7 @@ namespace bookme_backend.BLL.Services
             var servicio = await _servicioRepo.GetByIdAsync(dto.ServicioId);
             if (servicio == null)
                 return (false, "El servicio especificado no existe.", null);
-
+            
             var reserva = new Reserva
             {
                 NegocioId = dto.NegocioId,
@@ -360,8 +362,8 @@ namespace bookme_backend.BLL.Services
                     r => r.Pago          // incluir pagos asociados
                 );
 
-                if (reservas == null || !reservas.Any())
-                    return (false, "No se encontraron reservas", new List<ReservaResponseNegocioDTO>());
+                if (reservas == null)
+                    return (true, "", new List<ReservaResponseNegocioDTO>());
 
                 // Obtener la cantidad total de reservas por usuario en este negocio (cache para eficiencia)
                 var reservasPorUsuario = reservas
@@ -409,6 +411,47 @@ namespace bookme_backend.BLL.Services
                 return (false, $"Error al obtener reservas: {ex.Message}", new List<ReservaResponseNegocioDTO>());
             }
         }
+        public async Task<(bool Success, string Message, List<ReservasPorDiaDTO> Data)> GetReservasPorDiaSemanaAsync(int negocioId)
+        {
+            try
+            {
+                // Paso 1: Cargar solo las reservas del negocio específico
+                var reservas = await _reservaRepo.Query()
+                    .Where(r => r.NegocioId == negocioId)
+                    .ToListAsync(); // Este ToList fuerza la ejecución SQL solo hasta aquí
+
+                // Paso 2: Hacer el GroupBy en memoria
+                var resultado = reservas
+                    .GroupBy(r => r.Fecha.DayOfWeek)
+                    .Select(g => new ReservasPorDiaDTO
+                    {
+                        DiaSemana = g.Key.ToString(),
+                        TotalReservas = g.Count()
+                    })
+                    .OrderBy(r => r.DiaSemana) // opcional: orden alfabético
+                    .ToList();
+
+                return (true, "OK", resultado);
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Error al obtener reservas por día: {ex.Message}", new List<ReservasPorDiaDTO>());
+            }
+        }
+        public async Task<(bool Success, string Message)> CambiarEstadoPagoDeReservaAsync(int reservaId, EstadoPago nuevoEstado)
+        {
+            var pagos = await _pagoRepo.GetWhereAsync(p => p.ReservaId == reservaId);
+            var pago = pagos.FirstOrDefault();
+
+            if (pago == null)
+                return (false, "Pago no encontrado para la reserva.");
+
+            pago.EstadoPago = nuevoEstado;
+            await _pagoRepo.SaveChangesAsync();
+
+            return (true, "Estado del pago actualizado correctamente.");
+        }
+
 
     }
 }

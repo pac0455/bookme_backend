@@ -56,6 +56,14 @@ public partial class BookmeContext : IdentityDbContext<Usuario>
             .HasForeignKey(h => h.IdNegocio)
             .OnDelete(DeleteBehavior.Cascade);
 
+        modelBuilder.Entity<Pago>()
+            .Property(p => p.EstadoPago)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<Reserva>()
+            .Property(r => r.Estado)
+            .HasConversion<string>();
+
         //Seed categoria
         modelBuilder.Entity<Categoria>().HasData(
             new Categoria { Id = 1, Nombre = "Clínica" },

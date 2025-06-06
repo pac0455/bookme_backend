@@ -25,12 +25,12 @@ namespace bookme_backend.UI.Controllers
             try
             {
                 var errores = await _usuarioService.ValidarErroresRegistroAsync(model);
-                if(errores.Any())
+                if (errores.Any())
                     return Ok(new { Success = false, errores });
 
-                return Ok(new { Success = true,  errores });
+                return Ok(new { Success = true, errores });
             }
-          
+
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error inesperado en ValidarRegistro");
@@ -135,7 +135,8 @@ namespace bookme_backend.UI.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAllUsers()
         {
-            try{
+            try
+            {
                 var users = await _usuarioService.GetAllAsync();
                 return Ok(users);
             }
@@ -146,46 +147,15 @@ namespace bookme_backend.UI.Controllers
             }
         }
 
-        [HttpGet("estadisticas-usuarios/{negocioId}")]
-        public async Task<IActionResult> GetEstadisticasUsuariosPorNegocio(int negocioId)
-        {
-            try
-            {
-                var (success, message, data) = await _usuarioService.GetEstadisticasUsuariosPorNegocioAsync(negocioId);
-
-                if (!success)
-                {
-                    return BadRequest(new { message });
-                }
-
-                return Ok(new
-                {
-                    Success = true,
-                    Message = message,
-                    Data = data
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Error al obtener estadísticas de usuarios para negocio {negocioId}");
-                return StatusCode(500, new
-                {
-                    Success = false,
-                    Message = "Error interno al procesar la solicitud",
-                    Data = new List<UsuarioReservaEstadisticaDto>()
-                });
-            }
-        }
-
         [HttpDelete]
-        public async Task<IActionResult> DeleteUser([FromQuery]string email)
+        public async Task<IActionResult> DeleteUser([FromQuery] string email)
         {
             try
             {
                 var (success, message) = await _usuarioService.DeleteAsync(email);
                 if (!success)
                 {
-                    return BadRequest(new {message});
+                    return BadRequest(new { message });
 
                 }
 
@@ -193,9 +163,38 @@ namespace bookme_backend.UI.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al eliminar el usuario" );
+                _logger.LogError(ex, "Error al eliminar el usuario");
                 return StatusCode(500, new { message = "Error al eliminar el usuario" });
             }
+        }
+
+        [HttpPut("update-nombre")]
+        public async Task<IActionResult> UpdateUsuarioNombre([FromBody] UpdateNombreDTO model)
+        {
+            try
+            {
+                var (succes,usuarioActualizado, message) = await _usuarioService.UpdateUsuarioNombreAsync(model);
+                if(!succes)
+                {
+                    return BadRequest(new { message });
+                }
+                return Ok(new { usuarioActualizado, message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al actualizar el nombre del usuario");
+                return StatusCode(500, new { message = "Error interno del servidor." });
+            }
+        }
+        [HttpPut("update-password")]
+        public async Task<IActionResult> UpdatePassword([FromBody] UpdatePasswordDTO model)
+        {
+            var result = await _usuarioService.UpdatePasswordAsync(model);
+
+            if (!result.Success)
+                return BadRequest(new { message = result.Message });
+
+            return Ok(new { message = result.Message });
         }
     }
 }

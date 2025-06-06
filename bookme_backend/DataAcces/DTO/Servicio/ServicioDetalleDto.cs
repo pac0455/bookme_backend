@@ -19,7 +19,4 @@
         public int NumeroReservas { get; set; }
         public string? ImagenUrl { get; set; }
     }
-
-
-
 }

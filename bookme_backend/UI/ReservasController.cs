@@ -102,7 +102,31 @@ namespace bookme_backend.UI
                 return NotFound(new { message });
             return Ok(reservas);
         }
+        // GET: api/Reservas/Estadisticas/PorDiaSemana
+        [HttpGet("Estadisticas/PorDiaSemana")]
+        [Authorize(Roles = "NEGOCIO,ADMINISTRADOR")]
+        public async Task<IActionResult> GetReservasPorDiaSemana([FromQuery] int negocioId)
+        {
+            var (success, message, data) = await _reservaService.GetReservasPorDiaSemanaAsync(negocioId);
 
+            if (!success)
+                return BadRequest(new { message });
+
+            return Ok(data);
+        }
+
+
+        //[Authorize(Roles = "NEGOCIO,ADMINISTRADOR")]
+        [HttpPut("ActualizarEstadoPago/{reservaId}")]
+        public async Task<IActionResult> CambiarEstadoPago(int reservaId, [FromQuery] EstadoPago nuevoEstado)
+        {
+            var (success, message) = await _reservaService.CambiarEstadoPagoDeReservaAsync(reservaId, nuevoEstado);
+
+            if (!success)
+                return NotFound(new { message });
+
+            return Ok(new { message });
+        }
 
 
         [HttpPut("Cancelar/{id}")]
