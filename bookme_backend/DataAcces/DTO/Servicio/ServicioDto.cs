@@ -9,6 +9,21 @@
         public decimal Precio { get; set; }
 
         public IFormFile? Imagen { get; set; }
+
+
+        // Método estático de conversión
+        public Models.Servicio ToServicio(string? imagenUrl = null)
+        {
+            return new Models.Servicio
+            {
+                NegocioId = this.NegocioId,
+                Nombre = this.Nombre,
+                Descripcion = this.Descripcion,
+                DuracionMinutos = this.DuracionMinutos,
+                Precio = this.Precio,
+                ImagenUrl = imagenUrl
+            };
+        }
     }
 
 }

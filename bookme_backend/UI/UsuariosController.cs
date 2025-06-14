@@ -3,6 +3,8 @@ using bookme_backend.DataAcces.DTO;
 using bookme_backend.BLL.Interfaces;
 using bookme_backend.BLL.Exceptions;
 using bookme_backend.DataAcces.DTO.Usuario;
+using Microsoft.AspNetCore.Authorization;
+using bookme_backend.BLL.Services;
 
 namespace bookme_backend.UI.Controllers
 {
@@ -11,12 +13,16 @@ namespace bookme_backend.UI.Controllers
     public class UsuarioController : ControllerBase
     {
         private readonly IUsuarioService _usuarioService;
+        private readonly ICustomEmailSender _customEmailSender;
         private readonly ILogger<UsuarioController> _logger;
 
-        public UsuarioController(ILogger<UsuarioController> logger, IUsuarioService usuarioService)
+        public UsuarioController(ILogger<UsuarioController> logger,
+            ICustomEmailSender customEmailSender,
+            IUsuarioService usuarioService)
         {
             _logger = logger;
             _usuarioService = usuarioService;
+            ICustomEmailSender _customEmailSender;
         }
 
         [HttpPost("validar-registro")]
@@ -132,6 +138,7 @@ namespace bookme_backend.UI.Controllers
         }
 
 
+        [Authorize(Roles = "ADMIN")]
         [HttpGet]
         public async Task<IActionResult> GetAllUsers()
         {
@@ -147,12 +154,58 @@ namespace bookme_backend.UI.Controllers
             }
         }
 
-        [HttpDelete]
-        public async Task<IActionResult> DeleteUser([FromQuery] string email)
+        //[Authorize(Roles = "CLIIENTE,NEGOCIO,ADMIN")]
+        [HttpGet("sendMail/{id}")]
+        public async Task<IActionResult> SendMail(string id)
         {
             try
             {
-                var (success, message) = await _usuarioService.DeleteAsync(email);
+                var response = await _usuarioService.SendAuthenticationCodeAsync(id);
+                if(!response.Success)
+                {
+                    return BadRequest(new { message = response.Message });
+                }
+                return Ok(new { message = response.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener el usuario");
+                return StatusCode(500, new { message = "Error al obtener el usuario" });
+            }
+        }
+
+        [HttpPost("confirm")]
+        public async Task<IActionResult> ConfirmEmail(ConfirmMailDTO model)
+        {
+            try
+            {
+                var (Success, Message) = await _usuarioService.VerifyCodeAsync(
+                    code: model.CODE,
+                    userId: model.Id
+                );
+
+
+                if(!Success)
+                {
+                    return BadRequest(new { message = Message });
+                }
+                _logger.LogInformation("Email confirmado exitosamente");
+                return Ok(new { message = Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al confirmar el email");
+                return StatusCode(500, new { message = "Error al confirmar el email" });
+            }
+        }
+
+        [Authorize(Roles = "CLIIENTE,NEGOCIO,ADMIN")]
+        [HttpDelete]
+        public async Task<IActionResult> DeleteUser([FromQuery] string id)
+        {
+            try
+            {
+                var (success, message) = await _usuarioService.DeleteAsync(id);
                 if (!success)
                 {
                     return BadRequest(new { message });
@@ -195,6 +248,27 @@ namespace bookme_backend.UI.Controllers
                 return BadRequest(new { message = result.Message });
 
             return Ok(new { message = result.Message });
+        }
+        // POST api/usuarios/{id}/bloquear
+        [HttpPut("{id}/bloquear")]
+        public async Task<IActionResult> BloquearUsuario(string id)
+        {
+            var (Success, Message) = await _usuarioService.BloquearUsuarioAsync(id);
+            if (!Success)
+                return BadRequest(new { success = false, message = Message });
+
+            return Ok(new { success = true, message = Message });
+        }
+
+        // POST api/usuarios/{id}/desbloquear
+        [HttpPut("{id}/desbloquear")]
+        public async Task<IActionResult> DesbloquearUsuario(string id)
+        {
+            var (Success, Message) = await _usuarioService.DesbloquearUsuarioAsync(id);
+            if (!Success)
+                return BadRequest(new { success = false, message = Message });
+
+            return Ok(new { success = true, message = Message });
         }
     }
 }

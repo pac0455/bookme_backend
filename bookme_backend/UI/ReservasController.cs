@@ -1,13 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc;
 using bookme_backend.DataAcces.Models;
 using Microsoft.AspNetCore.Authorization;
-using bookme_backend.DataAcces.Repositories.Interfaces;
 using bookme_backend.BLL.Interfaces;
 using bookme_backend.DataAcces.DTO.Reserva;
 using bookme_backend.DataAcces.DTO.Pago;
@@ -44,6 +37,7 @@ namespace bookme_backend.UI
 
 
         // GET: api/Horarios/Disponibles
+        [Authorize(Roles = "NEGOCIO,CLIENTE")]
         [HttpGet("Disponibles")]
         public async Task<IActionResult> GetHorarioDisponible(int negocioId, int servicioId, DateOnly date)
         {
@@ -61,6 +55,7 @@ namespace bookme_backend.UI
         }
 
         // GET: api/Reservas/5
+        [Authorize(Roles = "NEGOCIO,CLIENTE")]
         [HttpGet("{id}")]
         public async Task<ActionResult<Reserva>> GetReserva(int id)
         {
@@ -116,7 +111,7 @@ namespace bookme_backend.UI
         }
 
 
-        //[Authorize(Roles = "NEGOCIO,ADMINISTRADOR")]
+        [Authorize(Roles = "NEGOCIO,ADMINISTRADOR")]
         [HttpPut("ActualizarEstadoPago/{reservaId}")]
         public async Task<IActionResult> CambiarEstadoPago(int reservaId, [FromQuery] EstadoPago nuevoEstado)
         {

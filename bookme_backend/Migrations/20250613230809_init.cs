@@ -33,6 +33,7 @@ namespace bookme_backend.Migrations
                 {
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     firebase_uid = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    Bloqueado = table.Column<bool>(type: "bit", maxLength: 255, nullable: false),
                     UserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
@@ -173,6 +174,26 @@ namespace bookme_backend.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "RolesGlobales",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UsuarioId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Rol = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RolesGlobales", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_RolesGlobales_AspNetUsers_UsuarioId",
+                        column: x => x.UsuarioId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "negocios",
                 columns: table => new
                 {
@@ -185,7 +206,9 @@ namespace bookme_backend.Migrations
                     latitud = table.Column<double>(type: "float", nullable: false),
                     longitud = table.Column<double>(type: "float", nullable: false),
                     categoria = table.Column<int>(type: "int", nullable: false),
-                    activo = table.Column<bool>(type: "bit", nullable: true)
+                    activo = table.Column<bool>(type: "bit", nullable: false),
+                    eliminado = table.Column<bool>(type: "bit", nullable: false),
+                    Bloqueado = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -312,8 +335,9 @@ namespace bookme_backend.Migrations
                     fecha = table.Column<DateOnly>(type: "date", nullable: false),
                     hora_inicio = table.Column<TimeOnly>(type: "time", nullable: false),
                     hora_fin = table.Column<TimeOnly>(type: "time", nullable: false),
-                    estado = table.Column<int>(type: "int", maxLength: 255, nullable: false),
+                    estado = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
                     fecha_creacion = table.Column<DateTime>(type: "datetime", nullable: true),
+                    cancelacion_motivo = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     servicio_id = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
@@ -346,9 +370,9 @@ namespace bookme_backend.Migrations
                     id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     reserva_id = table.Column<int>(type: "int", nullable: false),
-                    monto = table.Column<decimal>(type: "decimal(10,2)", nullable: true),
+                    monto = table.Column<decimal>(type: "decimal(10,2)", nullable: false),
                     fecha_pago = table.Column<DateTime>(type: "datetime", nullable: true),
-                    estado_pago = table.Column<int>(type: "int", nullable: false),
+                    estado_pago = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     metodo_pago = table.Column<int>(type: "int", nullable: false),
                     respuesta_pasarela = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     moneda = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: true)
@@ -487,6 +511,12 @@ namespace bookme_backend.Migrations
                 column: "usuario_id");
 
             migrationBuilder.CreateIndex(
+                name: "IX_RolesGlobales_UsuarioId_Rol",
+                table: "RolesGlobales",
+                columns: new[] { "UsuarioId", "Rol" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_servicios_negocio_id",
                 table: "servicios",
                 column: "negocio_id");
@@ -535,6 +565,9 @@ namespace bookme_backend.Migrations
 
             migrationBuilder.DropTable(
                 name: "pagos");
+
+            migrationBuilder.DropTable(
+                name: "RolesGlobales");
 
             migrationBuilder.DropTable(
                 name: "suscripciones");

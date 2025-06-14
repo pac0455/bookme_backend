@@ -5,5 +5,6 @@
         Pendiente,    // El pago está en proceso y no ha sido confirmado.
         Confirmado,   // El pago ha sido completado y confirmado.
         Fallido,      // El pago no se pudo completar debido a un error.
+        Reembolsado   // El pago ha sido reembolsado al cliente.
     }
 }

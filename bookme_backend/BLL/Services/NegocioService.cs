@@ -4,10 +4,12 @@ using System.Text.Json;
 using bookme_backend.BLL.Interfaces;
 using bookme_backend.DataAcces.DTO;
 using bookme_backend.DataAcces.DTO.Google;
+using bookme_backend.DataAcces.DTO.NegocioDTO;
 using bookme_backend.DataAcces.DTO.Pago;
 using bookme_backend.DataAcces.DTO.Reserva;
 using bookme_backend.DataAcces.Models;
 using bookme_backend.DataAcces.Repositories.Interfaces;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -19,6 +21,8 @@ namespace bookme_backend.BLL.Services
         IRepository<Reserva> reservaRepo,
         IRepository<Servicio> servicioRepo,
         IRepository<Horario> horarioRepo,
+        IRepository<Pago> pagoRepo,
+
 
         ILogger<NegocioService> logger,
         IOptions<GoogleMapsSettings> googleMapsOptions,
@@ -29,6 +33,8 @@ namespace bookme_backend.BLL.Services
     {
         private readonly IRepository<Negocio> _negocioRepo = negocioRepo;
         private readonly IRepository<Horario> _horarioRepo = horarioRepo;
+        private readonly IRepository<Pago> _pagoRepo = pagoRepo;
+
 
         private readonly HttpClient _httpClient = httpClient;
         private readonly IRepository<Suscripcion> _subcripcionesRepo = subcripcionesRepo;
@@ -36,6 +42,10 @@ namespace bookme_backend.BLL.Services
         private readonly IRepository<Servicio> _servicioRepo = servicioRepo;
         private readonly ILogger<NegocioService> _logger = logger;
         private readonly GoogleMapsSettings _googleMapsSettings = googleMapsOptions.Value;
+
+        //Fucion auxiliar para sacar negocio
+
+
 
 
 
@@ -67,6 +77,22 @@ namespace bookme_backend.BLL.Services
                 return (false, $"Error al insertar negocio: {ex.Message}{innerMessage}");
             }
         }
+        public async Task<(bool Success, string Message)> AddRangeAsync(List<Negocio> negocios, string usuarioId)
+        {
+            try
+            {
+                foreach (var negocio in negocios)
+                {
+                    await _negocioRepo.AddAsync(negocio);
+                }
+                return (true, "Negocios añadidos correctamente.");
+            }
+            catch (Exception ex)
+            {
+
+                return (false, $"Error al insertar horarios: {ex.Message}");
+            }
+        }
         public async Task<(bool Success, string Message)> UpdateByNombreAsync(Negocio negocio, string usuarioId)
         {
             // Buscar el negocio por nombre
@@ -83,61 +109,6 @@ namespace bookme_backend.BLL.Services
             // Reutilizamos toda la lógica ya validada
             return await UpdateAsync(negocio, usuarioId);
         }
-        public async Task<(bool Success, string Message, List<ReservaDetalladaDto> Reservas)> GetReservasDetalladasByNegocioIdAsync(int negocioId)
-        {
-            try
-            {
-                // Verificar si el negocio existe
-                var negocioExiste = await _negocioRepo.Exist(n => n.Id == negocioId);
-
-                if (!negocioExiste)
-                {
-                    return (false, $"El negocio con ID {negocioId} no existe.", new List<ReservaDetalladaDto>());
-                }
-
-                // Traer los datos con Includes anidados, incluyendo Servicio
-                var reservas = await _reservaRepo.GetWhereAsync(
-                    r => r.NegocioId == negocioId,
-                    q => q.Include(r => r.Servicio)    // Incluimos el Servicio
-                );
-
-                // Mapear las reservas a DTO
-                var reservasDetalladas = reservas.Select(r => new ReservaDetalladaDto
-                {
-                    ReservaId = r.Id,
-                    Fecha = r.Fecha,
-                    Estado = r.Estado,
-                    EstadoPagoGeneral = r.Pago?.EstadoPago ?? EstadoPago.Pendiente,
-                    Servicios = r.Servicio != null
-                        ? new List<ServicioConPagoDto>
-                            {
-                        new ServicioConPagoDto
-                        {
-                            Nombre = r.Servicio.Nombre,
-                            Precio = (double?)r.Servicio.Precio,
-                            Pago = r.Pago != null
-                                ? new PagoDto
-                                {
-                                    Monto = (double)r.Pago.Monto,
-                                    Estado = r.Pago.EstadoPago,
-                                    Metodo = r.Pago.MetodoPago,
-                                    FechaPago = r.Pago.FechaPago ?? DateTime.MinValue
-                                }
-                                : null
-                        }
-                            }
-                        : new List<ServicioConPagoDto>()
-                }).ToList();
-
-                return (true, "Reservas detalladas obtenidas correctamente.", reservasDetalladas);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Error al obtener reservas detalladas del negocio con ID {negocioId}");
-                return (false, $"Error al obtener las reservas detalladas: {ex.Message}", new List<ReservaDetalladaDto>());
-            }
-        }
-
         public async Task<(bool Success, string Message, Negocio? Negocio)> UpdateNegocioImagenAsync(int negocioId, Imagen imagen)
         {
 
@@ -212,7 +183,6 @@ namespace bookme_backend.BLL.Services
             var imageBytes = await System.IO.File.ReadAllBytesAsync(filePath);
             return (true, "Imagen obtenida correctamente.", imageBytes, contentType);
         }
-
         public async Task<(bool Success, string Message, List<Servicio> Servicios)> GetServiciosReservadosByNegocioIdAsync(int negocioId)
         {
             try
@@ -268,26 +238,7 @@ namespace bookme_backend.BLL.Services
                 return (false, $"Error al obtener los servicios: {ex.Message}", new List<Servicio>());
             }
         }
-
-
-        public async Task<(bool Success, string Message)> AddRangeAsync(List<Negocio> negocios, string usuarioId)
-        {
-            try
-            {
-                foreach (var negocio in negocios)
-                {
-                    await _negocioRepo.AddAsync(negocio);
-                }
-                return (true, "Negocios añadidos correctamente.");
-            }
-            catch (Exception ex)
-            {
-
-                return (false, $"Error al insertar horarios: {ex.Message}");
-            }
-        }
-
-        public async Task<(bool Success, string Message, List<Negocio> negocios)> GetByUserId(string userId)
+        public async Task<(bool Success, string Message, List<Negocio> negocios)> GetNegociosByUserId(string userId)
         {
             try
             {
@@ -297,8 +248,8 @@ namespace bookme_backend.BLL.Services
                 var negocioIds = suscripciones.Select(s => s.IdNegocio).Distinct().ToList();
 
                 var negocios = await _negocioRepo.GetWhereWithIncludesAsync(
-                    n => negocioIds.Contains(n.Id),
-                    n => n.HorariosAtencion,  
+                    n => negocioIds.Contains(n.Id) && !n.Eliminado,
+                    n => n.HorariosAtencion,
                     n => n.Categoria
                 );
 
@@ -412,46 +363,41 @@ namespace bookme_backend.BLL.Services
                 return (false, $"Error al obtener las reservas: {ex.Message}", new List<Reserva>());
             }
         }
+
+        //Funcion que se usará para mostrar al cliente los negocios activos
         public async Task<(bool Success, string Message, List<NegocioCardCliente> Negocios)> GetNegociosParaClienteAsync(Ubicacion? ubicacionUser)
         {
             try
             {
-                // Obtener todos los negocios activos con categoría y valoraciones
                 var negocios = await _negocioRepo.GetWhereWithIncludesAsync(
-                    n => n.Activo ?? false,
+                    n => n.Activo && !n.Eliminado,
                     n => n.Categoria,
                     n => n.HorariosAtencion,
                     n => n.Valoraciones
                 );
+
+                if (negocios == null || !negocios.Any())
+                    return (true, "No se encontraron negocios.", new List<NegocioCardCliente>());
+
                 var negociosDto = new List<NegocioCardCliente>();
 
-                // Proyectar a DTO incluyendo cálculo de distancia si la ubicación del usuario existe
                 foreach (var n in negocios)
                 {
-                    //var distancia = await CalcularDistanciaConGoogleAsync(
-                    //    ubicacionUser,
-                    //    new Ubicacion { Latitud = n.Latitud, Longitud = n.Longitud }
-                    //);
-                    var distancia = new Random().NextDouble();
-                    negociosDto.Add(new NegocioCardCliente
+                    double? distancia = null;
+                    if (ubicacionUser != null)
                     {
-                        Id = n.Id,
-                        Nombre = n.Nombre,
-                        Descripcion = n.Descripcion,
-                        Categoria = n.Categoria?.Nombre ?? "Sin categoría",
-                        Direccion = n.Direccion,
-                        Rating = n.Valoraciones.Any() ? (float)n.Valoraciones.Average(r => r.Puntuacion) : 0f,
-                        ReviewCount = n.Valoraciones.Count,
-                        IsActive = n.Activo ?? false,
-                        IsOpen = EstaAbierto(n.HorariosAtencion),
-                        Distancia = distancia,
-                        Latitud = n.Latitud,
-                        Longitud = n.Longitud
-                    });
+                        distancia = await CalcularDistanciaConGoogleAsync(
+                            ubicacionUser,
+                            new Ubicacion { Latitud = n.Latitud, Longitud = n.Longitud }
+                        );
+                    }
 
+                    bool isOpen = EstaAbierto(n.HorariosAtencion);
+
+                    var dto = NegocioMapper.ToNegocioCardCliente(n, distancia, isOpen);
+
+                    negociosDto.Add(dto);
                 }
-
-
 
                 return (true, "Negocios obtenidos correctamente", negociosDto);
             }
@@ -462,14 +408,12 @@ namespace bookme_backend.BLL.Services
             }
         }
 
-
         public async Task<(bool Success, string Message, NegocioCardCliente? Negocio)> GetNegocioParaClienteAsync(int negocioId, Ubicacion? ubicacionUser)
         {
             try
             {
-                // Obtener el negocio activo por ID, con categoría y valoraciones
                 var negocios = await _negocioRepo.GetWhereWithIncludesAsync(
-                    n => n.Id == negocioId && (n.Activo ?? false),
+                    n => n.Id == negocioId && n.Activo && !n.Eliminado,
                     n => n.Categoria,
                     n => n.HorariosAtencion,
                     n => n.Valoraciones
@@ -478,33 +422,22 @@ namespace bookme_backend.BLL.Services
                 var negocio = negocios.FirstOrDefault();
 
                 if (negocio == null)
+                    return (false, "Negocio no encontrado.", null);
+
+                double? distancia = null;
+                if (ubicacionUser != null && negocio.Latitud.HasValue && negocio.Longitud.HasValue)
                 {
-                    return (false, "Negocio no encontrado", null);
+                    distancia = await CalcularDistanciaConGoogleAsync(
+                        ubicacionUser,
+                        new Ubicacion { Latitud = negocio.Latitud, Longitud = negocio.Longitud }
+                    );
                 }
 
-                //var distancia = await CalcularDistanciaConGoogleAsync(
-                //    ubicacionUser,
-                //    new Ubicacion { Latitud = negocio.Latitud, Longitud = negocio.Longitud }
-                //);
-                var distancia = new Random().NextDouble(); // Simulación
+                bool isOpen = EstaAbierto(negocio.HorariosAtencion);
 
-                var negocioDto = new NegocioCardCliente
-                {
-                    Id = negocio.Id,
-                    Nombre = negocio.Nombre,
-                    Descripcion = negocio.Descripcion,
-                    Categoria = negocio.Categoria?.Nombre ?? "Sin categoría",
-                    Direccion = negocio.Direccion,
-                    Rating = negocio.Valoraciones.Any() ? (float)negocio.Valoraciones.Average(r => r.Puntuacion) : 0f,
-                    ReviewCount = negocio.Valoraciones.Count,
-                    IsActive = negocio.Activo ?? false,
-                    IsOpen = EstaAbierto(negocio.HorariosAtencion),
-                    Distancia = distancia,
-                    Latitud = negocio.Latitud,
-                    Longitud = negocio.Longitud
-                };
+                var dto = NegocioMapper.ToNegocioCardCliente(negocio, distancia, isOpen);
 
-                return (true, "Negocio obtenido correctamente", negocioDto);
+                return (true, "Negocio obtenido correctamente", dto);
             }
             catch (Exception ex)
             {
@@ -512,6 +445,7 @@ namespace bookme_backend.BLL.Services
                 return (false, $"Error al obtener negocio: {ex.Message}", null);
             }
         }
+
 
         public async Task<double?> CalcularDistanciaConGoogleAsync(Ubicacion origen, Ubicacion destino)
         {
@@ -611,5 +545,135 @@ namespace bookme_backend.BLL.Services
             return abiertos;
         }
 
+        // Métod usado por el panel de administración para obtener todos los negocios
+        public async Task<(bool Success, string Message, List<NegocioResponseAdminDTO> negocios)> GetAllNegocios()
+        {
+            try
+            {
+                var negocios = await _negocioRepo.GetWhereWithIncludesAsync(
+                    n => !n.Eliminado,
+                    n => n.Categoria,
+                    n => n.HorariosAtencion,
+                    n => n.Valoraciones
+                );
+
+                if (negocios == null || !negocios.Any())
+                {
+                    return (false, "No se encontraron negocios", new List<NegocioResponseAdminDTO>());
+                }
+
+                // Pasar el método EstaAbierto como Func al mapper
+              
+               
+                var negociosDto = negocios
+                    .Select(n => NegocioAdminMapper.ToNegocioResponseAdminDTO(n, EstaAbierto(n.HorariosAtencion)))
+                    .ToList();
+
+                return (true, "Negocios obtenidos correctamente", negociosDto);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener todos los negocios");
+                return (false, $"Error al obtener negocios: {ex.Message}", new List<NegocioResponseAdminDTO>());
+            }
+        }
+
+        public async Task<(bool Success, string Message)> DeleteAsync(int negocioId, string usuarioId, string motivo)
+        {
+            var negocio = await _negocioRepo.GetByIdAsync(negocioId);
+
+            if (negocio == null)
+                return (false, "Negocio no encontrado.");
+
+            negocio.Activo = false;
+            negocio.Eliminado = true;
+            _negocioRepo.Update(negocio);
+            await _negocioRepo.SaveChangesAsync();
+
+            var reservasCanceladas = await CancelarReservasDeNegocio(negocioId, motivo);
+            await CancelarPagosDeNegocio(negocioId, motivo);
+
+            return (true, "Negocio eliminado correctamente.");
+        }
+        public async Task<(bool Success, string Message)> BloquearNegocioAsync(int negocioId, string usuarioId)
+        {
+            var negocios = await _negocioRepo.GetWhereAsync(n => n.Id == negocioId && !n.Eliminado);
+            var negocio = negocios.FirstOrDefault();
+
+            if (negocio == null)
+                return (false, "Negocio no encontrado.");
+
+            if (negocio.Bloqueado)
+                return (false, "El negocio ya está bloqueado.");
+
+            negocio.Bloqueado = true;
+            negocio.Activo = false;
+
+            _negocioRepo.Update(negocio);
+            await _negocioRepo.SaveChangesAsync();
+
+            var reservasCanceladas = await CancelarReservasDeNegocio(negocioId, "Negocio bloqueado por administrador");
+            await CancelarPagosDeNegocio(negocioId, "Negocio bloqueado por administrador");
+
+            return (true, "Negocio bloqueado correctamente.");
+        }
+
+        public async Task<(bool Success, string Message)> DesbloquearNegocioAsync(int negocioId, string usuarioId)
+        {
+            var negocios = await _negocioRepo.GetWhereAsync(n => n.Id == negocioId && !n.Eliminado);
+            var negocio = negocios.FirstOrDefault();
+
+            if (negocio == null)
+                return (false, "Negocio no encontrado.");
+
+            if (!negocio.Bloqueado)
+                return (false, "El negocio ya está activo.");
+
+            negocio.Bloqueado = false;
+            negocio.Activo = true;
+
+            _negocioRepo.Update(negocio);
+            await _negocioRepo.SaveChangesAsync();
+
+            return (true, "Negocio desbloqueado correctamente.");
+        }
+
+
+
+        // Método para cancelar reservas de un negocio (sin llamada a cancelar pagos aquí)
+        private async Task<List<Reserva>> CancelarReservasDeNegocio(int negocioId, string motivo)
+        {
+            var reservas = (await _reservaRepo.GetWhereAsync(r => r.NegocioId == negocioId && r.Estado != EstadoReserva.Cancelada)).ToList();
+
+            foreach (var reserva in reservas)
+            {
+                reserva.Estado = EstadoReserva.Cancelada;
+                reserva.CancelacionMotivo = motivo;
+                _reservaRepo.Update(reserva);
+            }
+
+            await _reservaRepo.SaveChangesAsync();
+
+            return reservas;
+        }
+
+        // Método independiente que cancela/reembolsa pagos pendientes de un negocio, sin requerir reservas externas
+        private async Task CancelarPagosDeNegocio(int negocioId, string motivo)
+        {
+            // Obtiene las reservas activas o canceladas que tengan pagos no reembolsados
+            var reservasConPagos = (await _reservaRepo.GetWhereWithIncludesAsync(r =>
+                r.NegocioId == negocioId && r.Pago != null && r.Pago.EstadoPago != EstadoPago.Reembolsado,
+                r => r.Pago
+            )).ToList();
+
+            foreach (var reserva in reservasConPagos)
+            {
+                reserva.Pago.EstadoPago = EstadoPago.Reembolsado;
+                // Opcional: podrías agregar motivo de reembolso en pago, si tienes campo para eso
+                _pagoRepo.Update(reserva.Pago);
+            }
+
+            await _pagoRepo.SaveChangesAsync();
+        }
     }
 }

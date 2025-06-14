@@ -1,6 +1,5 @@
 ﻿using System.Security.Claims;
 using System.Text;
-using bookme_backend;
 using bookme_backend.BLL.Interfaces;
 using bookme_backend.BLL.Services;
 using bookme_backend.DataAcces.Models;
@@ -13,19 +12,23 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using bookme_backend.UI;
 using bookme_backend.Services;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.DependencyInjection;
+
 using bookme_backend.DataAcces.DTO.Google;
 using System.Text.Json.Serialization;
+using bookme_backend.DataAcces.Seeds;
 
 namespace bookme_backend
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+            //Crear roles
+
 
             // JWT Authentication
             builder.Services.AddAuthentication(options =>
@@ -106,6 +109,7 @@ namespace bookme_backend
 
 
             // Registrar servicios
+            builder.Services.AddSingleton<AuthCodeStore>();
             builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
 
@@ -141,11 +145,6 @@ namespace bookme_backend
             .AddEntityFrameworkStores<BookmeContext>()
             .AddDefaultTokenProviders();
 
-
-
-
-
-
             var app = builder.Build();
 
             if (app.Environment.IsDevelopment())
@@ -154,6 +153,20 @@ namespace bookme_backend
                 app.UseSwaggerUI();
             }
             app.UseStaticFiles(); // Esto habilita wwwroot (por defecto)
+
+            // Sirve archivos de .well-known con tipo JSON (App Links)
+            var fileRoute = Path.Combine(Directory.GetCurrentDirectory(), "UI", "wwwroot", ".well-known");
+            Console.Write(fileRoute);
+            Console.WriteLine($"[INIT] .well-known path: {fileRoute}");
+            app.UseStaticFiles(new StaticFileOptions
+            {
+               
+                FileProvider = new PhysicalFileProvider(fileRoute),
+                RequestPath = "/.well-known",
+                ServeUnknownFileTypes = true,
+                DefaultContentType = "application/json"
+            });
+
             var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
             if (!Directory.Exists(uploadsPath))
             {
@@ -176,9 +189,47 @@ namespace bookme_backend
 
             app.MapControllers();
 
-            app.Run();
 
+            using (var scope = app.Services.CreateScope())
+            {
+                var services = scope.ServiceProvider;
 
+                try
+                {
+                    // Aplica migraciones pendientes en la base de datos
+                    var dbContext = services.GetRequiredService<BookmeContext>();
+                    dbContext.Database.Migrate();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error aplicando migraciones: {ex.Message}");
+                }
+
+                // Sembrar roles al iniciar la aplicación
+                try
+                {
+                    var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+                    await IdentitySeeder.SeedRolesAsync(roleManager);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error al sembrar roles: {ex.Message}");
+                }
+                try
+                {
+                    var userManager = services.GetRequiredService<UserManager<Usuario>>();
+                    var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+
+                    var usuarioService = services.GetRequiredService<IUsuarioService>();
+                    await usuarioService.CreateAdminUserAsync(userManager, roleManager);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error al sembrar datos de identidad: {ex.Message}");
+                }
+
+                app.Run();
+            }
         }
     }
 }

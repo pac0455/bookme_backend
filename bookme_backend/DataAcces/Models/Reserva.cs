@@ -1,9 +1,10 @@
-﻿using bookme_backend.DataAcces.DTO.Reserva;
-using bookme_backend.DataAcces.Models;
+﻿using bookme_backend.DataAcces.Models;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
+using bookme_backend.DataAcces.DTO.Reserva;
 
+namespace bookme_backend.DataAcces.Models;
 [Table("reservas")]
 public partial class Reserva
 {
@@ -33,8 +34,13 @@ public partial class Reserva
     [Column("fecha_creacion", TypeName = "datetime")]
     public DateTime? FechaCreacion { get; set; }
 
+    [Column("cancelacion_motivo")]
+    [StringLength(500)]
+    public string? CancelacionMotivo { get; set; }
+
     [Column("servicio_id")]
     public int ServicioId { get; set; }
+
 
     [ForeignKey("NegocioId")]
     [InverseProperty("Reservas")]

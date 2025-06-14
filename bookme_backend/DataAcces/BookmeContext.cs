@@ -17,18 +17,13 @@ public partial class BookmeContext : IdentityDbContext<Usuario>
     }
 
     public virtual DbSet<Negocio> Negocios { get; set; }
-
     public virtual DbSet<Pago> Pagos { get; set; }
-
     public virtual DbSet<Reserva> Reservas { get; set; }
-
     public virtual DbSet<Servicio> Servicios { get; set; }
-
     public virtual DbSet<Suscripcion> Suscripciones { get; set; }
-
     public virtual DbSet<Usuario> Usuarios { get; set; }
-
     public virtual DbSet<Valoracion> Valoraciones { get; set; }
+    public DbSet<RolGlobal> RolesGlobales { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -48,22 +43,36 @@ public partial class BookmeContext : IdentityDbContext<Usuario>
             .HasForeignKey(r => r.ServicioId)
             .OnDelete(DeleteBehavior.Restrict);
 
-
-
         modelBuilder.Entity<Horario>()
             .HasOne(h => h.Negocio)
             .WithMany(n => n.HorariosAtencion)
             .HasForeignKey(h => h.IdNegocio)
             .OnDelete(DeleteBehavior.Cascade);
 
+        //Hacer que enum se guarde como string
         modelBuilder.Entity<Pago>()
             .Property(p => p.EstadoPago)
             .HasConversion<string>();
-
+        //Hacer que enum se guarde como string
         modelBuilder.Entity<Reserva>()
             .Property(r => r.Estado)
             .HasConversion<string>();
 
+        //Evita que un usuario tenga 2 veces el mismo rol
+        modelBuilder.Entity<RolGlobal>()
+            .HasIndex(r => new { r.UsuarioId, r.Rol })
+            .IsUnique();
+       
+
+        modelBuilder.Entity<RolGlobal>()
+            .Property(r => r.Rol)
+            .HasConversion<string>();
+        //Hacer que enum se guarde como string
+        modelBuilder.Entity<Suscripcion>()
+            .Property(s => s.RolNegocio)
+            .HasConversion<string>();
+
+       
         //Seed categoria
         modelBuilder.Entity<Categoria>().HasData(
             new Categoria { Id = 1, Nombre = "Clínica" },

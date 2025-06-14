@@ -4,7 +4,6 @@ using MimeKit;
 
 using bookme_backend.DataAcces.Models;
 using MailKit.Security;
-using Microsoft.AspNetCore.Identity.UI.Services;
 
 namespace bookme_backend.BLL.Services
 {
@@ -37,7 +36,7 @@ namespace bookme_backend.BLL.Services
                 // Cuerpo del mensaje en HTML
                 var builder = new BodyBuilder
                 {
-                    HtmlBody = htmlMessage
+                    HtmlBody = htmlMessage,
                 };
 
                 message.Body = builder.ToMessageBody();
@@ -62,7 +61,7 @@ namespace bookme_backend.BLL.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al enviar email");
-                throw; // Re-lanzar la excepción para que el llamador sepa que falló
+                throw; // Re-lanzar la excepción para que el ll amador sepa que falló
             }
         }
 

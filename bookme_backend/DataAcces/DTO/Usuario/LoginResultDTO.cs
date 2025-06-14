@@ -9,5 +9,4 @@ namespace bookme_backend.DataAcces.DTO
         public IList<string> Roles { get; set; } = new List<string>();
 
     }
-
 }

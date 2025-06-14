@@ -2,6 +2,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 
+namespace bookme_backend.DataAcces.Models;
 [Table("servicios")]
 public partial class Servicio
 {

@@ -15,15 +15,15 @@ public partial class Negocio
 
     [Column("nombre")]
     [StringLength(255), Required]
-    public string? Nombre { get; set; }
+    public string Nombre { get; set; }
 
     [Column("descripcion"), Required]
     [StringLength(255)]
-    public string? Descripcion { get; set; }
+    public string Descripcion { get; set; }
 
     [Column("direccion")]
     [StringLength(255), Required]
-    public string? Direccion { get; set; }
+    public string Direccion { get; set; }
     [Column("logo")]
     [StringLength(255)]
     public string? LogoUrl { get; set; }
@@ -35,9 +35,12 @@ public partial class Negocio
     public int CategoriaId { get; set; }
 
     [ForeignKey("CategoriaId")] public virtual
-    Categoria Categoria { get; set; } = null!;
+    Categoria Categoria { get; set; }
     [Column("activo")]
-    public bool? Activo { get; set; }
+    public bool Activo { get; set; }
+    [Column("eliminado")]
+    public bool Eliminado { get; set; } = false;
+    public bool Bloqueado { get; set; } = false;
 
     [InverseProperty("Negocio")]
     [JsonPropertyName("horarioAtencion")]

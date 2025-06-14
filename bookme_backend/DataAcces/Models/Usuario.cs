@@ -13,7 +13,14 @@ public partial class Usuario:  IdentityUser
     [Column("firebase_uid")]
     [StringLength(255)]
     public string? FirebaseUid { get; set; } = null;
+
+
+    [Column]
+    [Required]
+    [StringLength(255)]
+    public bool Bloqueado { get; set; }
     //Relaciones
+
     [InverseProperty("Usuario")]
     public virtual ICollection<Reserva> Reservas { get; set; } = new List<Reserva>();
 

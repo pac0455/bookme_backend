@@ -1,4 +1,5 @@
-﻿using bookme_backend.DataAcces.DTO.Pago;
+﻿using System.ComponentModel.DataAnnotations;
+using bookme_backend.DataAcces.DTO.Pago;
 
 namespace bookme_backend.DataAcces.DTO.Reserva
 {
@@ -12,6 +13,6 @@ namespace bookme_backend.DataAcces.DTO.Reserva
         public EstadoReserva? Estado { get; set; }       // Nullable enum para opcionalidad
 
         public int ServicioId { get; set; }              // Cambiado a un solo servicioId
-        public PagoCreateDTO? Pago { get; set; }
+        public required PagoCreateDTO Pago { get; set; }
     }
 }

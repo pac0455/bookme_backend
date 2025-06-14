@@ -77,7 +77,9 @@ namespace bookme_backend.Services
         public async Task<List<Servicio>> GetAllServiciosAsync()
         {
             // Devuelve la lista completa de servicios usando el repositorio genérico
-            return await _servicioRepo.GetAllAsync();
+            var negociosActivos = (await _negocioRepo.GetWhereAsync(n => n.Activo && !n.Bloqueado)).Select(n => n.Id).ToList();
+
+            return await _servicioRepo.GetWhereAsync(s => negociosActivos.Contains(s.NegocioId));
         }
         /// <summary>
         /// Obtiene un servicio específico por su ID.
@@ -106,14 +108,7 @@ namespace bookme_backend.Services
             if (negocio == null)
                 return (false, $"No existe negocio con Id {dto.NegocioId}.", null);
 
-            var servicio = new Servicio
-            {
-                NegocioId = dto.NegocioId,
-                Nombre = dto.Nombre,
-                Descripcion = dto.Descripcion,
-                DuracionMinutos = dto.DuracionMinutos,
-                Precio = dto.Precio
-            };
+            var servicio = dto.ToServicio();
 
             try
             {
@@ -150,7 +145,8 @@ namespace bookme_backend.Services
                 return (false, $"Error inesperado: {ex.Message}", null);
             }
         }
-        
+
+
         public async Task<(bool Success, string Message, byte[]? ImageBytes, string ContentType)> GetImagenByServicioIdAsync(int servicioId)
         {
             var servicio = await _servicioRepo.GetByIdAsync(servicioId);
@@ -317,21 +313,11 @@ namespace bookme_backend.Services
                 // Obtener todas las reservas del negocio (para contar reservas por servicio)
                 var reservas = await _reservaRepo.GetWhereAsync(r => r.NegocioId == negocioId);
 
-                // Proyectar a DTO con conteo de reservas por servicio
-                var detalles = servicios.Select(s => new ServicioDetalleDto
+                // Proyectar a DTO usando el método estático FromServicio
+                var detalles = servicios.Select(s =>
                 {
-                    Id = s.Id,
-                    NegocioId = s.NegocioId,
-                    Nombre = s.Nombre ?? string.Empty,
-                    Descripcion = s.Descripcion ?? string.Empty,
-                    DuracionMinutos = s.DuracionMinutos,
-                    Precio = s.Precio,
-                    NegocioNombre = negocio.Nombre ?? string.Empty,
-                    Categoria = negocio.Categoria?.Nombre ?? "Sin categoría", // Propiedad 'categoria' en minúscula según tabla
-                    ValoracionPromedioNegocio = promedio, // propiedad renombrada en DTO
-                    NumeroValoracionesNegocio = totalValoraciones, // propiedad renombrada en DTO
-                    NumeroReservas = reservas.Count(r => r.ServicioId == s.Id),
-                    ImagenUrl = s.ImagenUrl
+                    int numeroReservas = reservas.Count(r => r.ServicioId == s.Id);
+                    return ServicioDetalleDto.FromServicio(s, negocio, promedio, totalValoraciones, numeroReservas);
                 }).ToList();
 
                 return (true, "Servicios detallados obtenidos correctamente.", detalles);
@@ -342,6 +328,7 @@ namespace bookme_backend.Services
                 return (false, $"Error al obtener servicios detallados: {ex.Message}", new List<ServicioDetalleDto>());
             }
         }
+
 
 
         /// <summary>
@@ -374,26 +361,29 @@ namespace bookme_backend.Services
         {
             try
             {
-                // Obtener todos los negocios con categoría y valoraciones
+                // Obtener negocios activos y no bloqueados con sus categorías y valoraciones
                 var negocios = await _negocioRepo.GetWhereWithIncludesAsync(
-                    n => true,
+                    n => n.Activo && !n.Bloqueado,
                     n => n.Categoria,
                     n => n.Valoraciones
                 );
 
-                // Obtener todos los servicios con negocio y categoría (incluidos)
+                var negocioIds = negocios.Select(n => n.Id).ToList();
+
+                // Obtener servicios cuyos negocios están activos y no bloqueados, incluyendo negocio y categoría
                 var servicios = await _servicioRepo.GetWhereAsync(
-                    s => true,
+                    s => negocioIds.Contains(s.NegocioId),
                     query => query
                         .Include(s => s.Negocio)
                             .ThenInclude(n => n.Categoria)
                 );
 
+                var servicioIds = servicios.Select(s => s.Id).ToList();
 
-                // Obtener todas las reservas
-                var reservas = await _reservaRepo.GetAllAsync();
+                // Obtener reservas solo para estos servicios
+                var reservas = await _reservaRepo.GetWhereAsync(r => servicioIds.Contains(r.ServicioId));
 
-                // Mapear valoraciones por negocio
+                // Mapear valoraciones por negocio (promedio y total)
                 var negocioValoracionesMap = negocios.ToDictionary(
                     n => n.Id,
                     n => new
@@ -403,6 +393,7 @@ namespace bookme_backend.Services
                     }
                 );
 
+                // Mapear detalles de servicios con sus negocios, valoraciones y número de reservas
                 var detalles = servicios.Select(s =>
                 {
                     var negocioId = s.NegocioId;
@@ -410,21 +401,13 @@ namespace bookme_backend.Services
                         ? negocioValoracionesMap[negocioId]
                         : new { Promedio = 0.0, Total = 0 };
 
-                    return new ServicioDetalleDto
-                    {
-                        Id = s.Id,
-                        NegocioId = negocioId,
-                        Nombre = s.Nombre ?? string.Empty,
-                        Descripcion = s.Descripcion ?? string.Empty,
-                        DuracionMinutos = s.DuracionMinutos,
-                        Precio = s.Precio,
-                        NegocioNombre = s.Negocio?.Nombre ?? string.Empty,
-                        Categoria = s.Negocio?.Categoria?.Nombre ?? "Sin categoría",
-                        ValoracionPromedioNegocio = valoracion.Promedio,
-                        NumeroValoracionesNegocio = valoracion.Total,
-                        NumeroReservas = reservas.Count(r => r.ServicioId == s.Id),
-                        ImagenUrl = s.ImagenUrl
-                    };
+                    return ServicioDetalleDto.FromServicio(
+                        servicio: s,
+                        negocio: s.Negocio,
+                        valoracionPromedioNegocio: valoracion.Promedio,
+                        numeroValoracionesNegocio: valoracion.Total,
+                        numeroReservas: reservas.Count(r => r.ServicioId == s.Id)
+                    );
                 }).ToList();
 
                 return (true, "Servicios detallados obtenidos correctamente.", detalles);
@@ -435,6 +418,5 @@ namespace bookme_backend.Services
                 return (false, $"Error al obtener servicios detallados: {ex.Message}", new List<ServicioDetalleDto>());
             }
         }
-
     }
 }

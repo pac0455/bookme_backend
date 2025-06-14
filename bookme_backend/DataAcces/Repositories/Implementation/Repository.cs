@@ -89,8 +89,6 @@ namespace bookme_backend.DataAcces.Repositories.Implementation
         {
             return _dbSet.AsQueryable();
         }
-
-
     }
 
 }

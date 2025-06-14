@@ -50,7 +50,7 @@ namespace bookme_backend.BLL.Services
             var servicio = await _servicioRepo.GetByIdAsync(dto.ServicioId);
             if (servicio == null)
                 return (false, "El servicio especificado no existe.", null);
-            
+
             var reserva = new Reserva
             {
                 NegocioId = dto.NegocioId,
@@ -68,12 +68,10 @@ namespace bookme_backend.BLL.Services
 
             Pago pago;
 
-            if (dto.Pago != null)
+            switch (dto.Pago.MetodoPago)
             {
-                var metodo = dto.Pago.MetodoPago;
-
-                if (metodo == MetodoPago.Tarjeta || metodo == MetodoPago.PayPal)
-                {
+                case MetodoPago.Tarjeta:
+                case MetodoPago.PayPal:
                     // Pago en línea: procesar con pasarela
                     var resultadoPago = await _pasarelaSimulada.ProcesarPagoAsync(dto.Pago);
 
@@ -87,9 +85,9 @@ namespace bookme_backend.BLL.Services
                         FechaPago = resultadoPago.Exitoso ? DateTime.UtcNow : null,
                         Moneda = dto.Pago.Moneda ?? "EUR"
                     };
-                }
-                else
-                {
+                    break;
+
+                default:
                     // Pago manual: no usar pasarela
                     pago = new Pago
                     {
@@ -101,52 +99,18 @@ namespace bookme_backend.BLL.Services
                         FechaPago = null,
                         Moneda = dto.Pago.Moneda ?? "EUR"
                     };
-                }
-            }
-            else
-            {
-                pago = new Pago
-                {
-                    ReservaId = reserva.Id,
-                    Monto = 0,
-                    EstadoPago = EstadoPago.Pendiente,
-                    MetodoPago = MetodoPago.Efectivo,
-                    RespuestaPasarela = "Pago pendiente",
-                    FechaPago = null,
-                    Moneda = "EUR"
-                };
+                    break;
             }
 
             await _pagoRepo.AddAsync(pago);
             await _pagoRepo.SaveChangesAsync();
 
-            var reservaDto = new ReservaResponseDTO
-            {
-                Id = reserva.Id,
-                NegocioId = reserva.NegocioId,
-                UsuarioId = reserva.UsuarioId,
-                Fecha = reserva.Fecha,
-                HoraInicio = reserva.HoraInicio,
-                HoraFin = reserva.HoraFin,
-                Estado = reserva.Estado,
-                FechaCreacion = reserva.FechaCreacion,
-                ServicioId = reserva.ServicioId,
-                Servicio = new ServicioDTO
-                {
-                    Id = servicio.Id,
-                    Nombre = servicio.Nombre
-                },
-                Pago = new PagoDTO
-                {
-                    Id = pago.Id,
-                    Monto = pago.Monto ?? -1,
-                    EstadoPago = pago.EstadoPago,
-                    MetodoPago = pago.MetodoPago,
-                }
-            };
+            // Usar el método estático para mapear
+            var reservaDto = ReservaMapper.FromEntity(reserva, servicio, pago);
 
             return (true, "Reserva creada correctamente", reservaDto);
         }
+
         public async Task<(bool Success, string Message)> CancelarReservaAsync(int reservaId, string usuarioId)
         {
             var reserva = await _reservaRepo.GetByIdAsync(reservaId);
@@ -216,33 +180,11 @@ namespace bookme_backend.BLL.Services
             var pagos = await _pagoRepo.GetWhereAsync(p => p.ReservaId == reservaId);
             var pago = pagos.FirstOrDefault();
 
-            var reservaDTO = new ReservaResponseDTO
-            {
-                Id = reserva.Id,
-                NegocioId = reserva.NegocioId,
-                UsuarioId = reserva.UsuarioId,
-                Fecha = reserva.Fecha,
-                HoraInicio = reserva.HoraInicio,
-                HoraFin = reserva.HoraFin,
-                Estado = reserva.Estado,
-                FechaCreacion = reserva.FechaCreacion,
-                ServicioId = reserva.ServicioId,
-                Servicio = new ServicioDTO
-                {
-                    Id = servicio.Id,
-                    Nombre = servicio.Nombre
-                },
-                Pago = pago != null ? new PagoDTO
-                {
-                    Id = pago.Id,
-                    Monto = pago.Monto ?? 0,
-                    EstadoPago = pago.EstadoPago,
-                    MetodoPago = pago.MetodoPago,
-                } : null
-            };
+            var reservaDTO = ReservaMapper.FromEntity(reserva, servicio, pago);
 
             return (true, "Reserva encontrada", reservaDTO);
         }
+
 
         public async Task<(bool Success, string Message, List<ReservaResponseDTO> reservas)> GetReservasByUserIdAsync(string userId)
         {
@@ -273,35 +215,12 @@ namespace bookme_backend.BLL.Services
                     ? EstadoReserva.Cancelada
                     : (esFinalizada ? EstadoReserva.Finalizada : reserva.Estado);
 
-                reservaDtos.Add(new ReservaResponseDTO
-                {
-                    Id = reserva.Id,
-                    NegocioId = reserva.NegocioId,
-                    UsuarioId = reserva.UsuarioId,
-                    Fecha = reserva.Fecha,
-                    HoraInicio = reserva.HoraInicio,
-                    HoraFin = reserva.HoraFin,
-                    Estado = reserva.Estado,
-                    FechaCreacion = reserva.FechaCreacion,
-                    ServicioId = reserva.ServicioId,
-                    Servicio = new ServicioDTO
-                    {
-                        Id = servicio.Id,
-                        Nombre = servicio.Nombre
-                    },
-                    Pago = pago != null ? new PagoDTO
-                    {
-                        Id = pago.Id,
-                        Monto = pago.Monto ?? 0,
-                        EstadoPago = pago.EstadoPago,
-                        MetodoPago = pago.MetodoPago,
-                    } : null
-                });
+                reservaDtos.Add(ReservaMapper.FromEntity(reserva, servicio, pago));
             }
 
             return (true, "Reservas del usuario encontradas", reservaDtos);
         }
-        public async Task<(bool Success, string Message, ReservaResponseDTO? reservas)> CancelarReservaByNegocioId(int reservaId)
+        public async Task<(bool Success, string Message, ReservaResponseDTO? reserva)> CancelarReservaByNegocioId(int reservaId)
         {
             var reserva = await _reservaRepo.GetByIdAsync(reservaId);
             if (reserva == null)
@@ -318,34 +237,10 @@ namespace bookme_backend.BLL.Services
             await _reservaRepo.SaveChangesAsync();
 
             var servicio = await _servicioRepo.GetByIdAsync(reserva.ServicioId);
-
             var pagos = await _pagoRepo.GetWhereAsync(p => p.ReservaId == reservaId);
             var pago = pagos.FirstOrDefault();
 
-            var reservaDto = new ReservaResponseDTO
-            {
-                Id = reserva.Id,
-                NegocioId = reserva.NegocioId,
-                UsuarioId = reserva.UsuarioId,
-                Fecha = reserva.Fecha,
-                HoraInicio = reserva.HoraInicio,
-                HoraFin = reserva.HoraFin,
-                Estado = reserva.Estado,
-                FechaCreacion = reserva.FechaCreacion,
-                ServicioId = reserva.ServicioId,
-                Servicio = new ServicioDTO
-                {
-                    Id = servicio.Id,
-                    Nombre = servicio.Nombre
-                },
-                Pago = pago != null ? new PagoDTO
-                {
-                    Id = pago.Id,
-                    Monto = pago.Monto ?? 0,
-                    EstadoPago = pago.EstadoPago,
-                    MetodoPago = pago.MetodoPago
-                } : null
-            };
+            var reservaDto = ReservaMapper.FromEntity(reserva, servicio!, pago);
 
             return (true, "Reserva cancelada correctamente.", reservaDto);
         }
@@ -354,55 +249,27 @@ namespace bookme_backend.BLL.Services
         {
             try
             {
-                // Obtener todas las reservas del negocio con sus datos relacionados
                 var reservas = await _reservaRepo.GetWhereWithIncludesAsync(
                     r => r.NegocioId == negocioId,
-                    r => r.Usuario,        // incluir datos usuario
-                    r => r.Servicio,      // incluir datos servicio
-                    r => r.Pago          // incluir pagos asociados
+                    r => r.Usuario,
+                    r => r.Servicio,
+                    r => r.Pago
                 );
 
-                if (reservas == null)
+                if (reservas == null || !reservas.Any())
                     return (true, "", new List<ReservaResponseNegocioDTO>());
 
-                // Obtener la cantidad total de reservas por usuario en este negocio (cache para eficiencia)
+                // Conteo reservas por usuario
                 var reservasPorUsuario = reservas
                     .GroupBy(r => r.UsuarioId)
                     .ToDictionary(g => g.Key, g => g.Count());
 
-                // Mapear a DTO
                 var resultado = reservas.Select(r =>
                 {
-                    var fechaFinReserva = r.Fecha.ToDateTime(r.HoraFin);
-                    bool esFinalizada = DateTime.Now > fechaFinReserva;
-                    
-
-                    var reserva= new ReservaResponseNegocioDTO
-                    {
-                        Id = r.Id,
-                        Username = r.Usuario?.UserName ?? "Usuario sin nombre",
-                        NReservasUsuario = reservasPorUsuario.ContainsKey(r.UsuarioId) ? reservasPorUsuario[r.UsuarioId] : 0,
-                        ServicioNombre = r.Servicio?.Nombre ?? "Servicio sin nombre",
-                        ServicioDescripcion = r.Servicio?.Descripcion ?? "Sin descripcion",
-                        Fecha = r.Fecha,
-                        HoraInicio = TimeOnly.Parse(r.HoraInicio.ToString()),
-                        HoraFin = TimeOnly.Parse(r.HoraFin.ToString()),
-                        Precio = Decimal.ToDouble(r.Servicio?.Precio ?? 0),
-                        Moneda = r.Pago.Moneda ?? "EUR",
-                        EstadoReserva = EstadoReserva.Pendiente,
-                        EstadoPago = r.Pago.EstadoPago
-                    };
-                    if(r.Estado == EstadoReserva.Cancelada)
-                    {
-                        reserva.EstadoReserva = EstadoReserva.Cancelada;
-                    }
-                    else
-                    {
-                        reserva.EstadoReserva = esFinalizada ? EstadoReserva.Finalizada : r.Estado;
-                    }
-                    return reserva;
+                    var dto = ReservaNegocioMapper.FromEntity(r, r.Usuario);
+                    dto.NReservasUsuario = reservasPorUsuario.ContainsKey(r.UsuarioId) ? reservasPorUsuario[r.UsuarioId] : 0;
+                    return dto;
                 }).ToList();
-
 
                 return (true, "Reservas obtenidas", resultado);
             }
@@ -411,33 +278,54 @@ namespace bookme_backend.BLL.Services
                 return (false, $"Error al obtener reservas: {ex.Message}", new List<ReservaResponseNegocioDTO>());
             }
         }
+
         public async Task<(bool Success, string Message, List<ReservasPorDiaDTO> Data)> GetReservasPorDiaSemanaAsync(int negocioId)
         {
             try
             {
-                // Paso 1: Cargar solo las reservas del negocio específico
                 var reservas = await _reservaRepo.Query()
                     .Where(r => r.NegocioId == negocioId)
-                    .ToListAsync(); // Este ToList fuerza la ejecución SQL solo hasta aquí
+                    .ToListAsync();
 
-                // Paso 2: Hacer el GroupBy en memoria
-                var resultado = reservas
+                // Diccionario para mapear DayOfWeek a inicial en español
+                var diasIniciales = new Dictionary<DayOfWeek, string>
+        {
+            { DayOfWeek.Monday, "L" },
+            { DayOfWeek.Tuesday, "M" },
+            { DayOfWeek.Wednesday, "X" },
+            { DayOfWeek.Thursday, "J" },
+            { DayOfWeek.Friday, "V" },
+            { DayOfWeek.Saturday, "S" },
+            { DayOfWeek.Sunday, "D" }
+        };
+
+                // Lista fija en orden para garantizar todos los días
+                var diasSemana = diasIniciales.Values.ToList();
+
+                var reservasPorDia = reservas
                     .GroupBy(r => r.Fecha.DayOfWeek)
                     .Select(g => new ReservasPorDiaDTO
                     {
-                        DiaSemana = g.Key.ToString(),
+                        DiaSemana = diasIniciales[g.Key], // Traducimos al inicial español aquí
                         TotalReservas = g.Count()
                     })
-                    .OrderBy(r => r.DiaSemana) // opcional: orden alfabético
                     .ToList();
 
-                return (true, "OK", resultado);
+                // Crear resultado final asegurando todos los días con su inicial
+                var resultadoCompleto = diasSemana
+                    .Select(dia => reservasPorDia.FirstOrDefault(r => r.DiaSemana == dia)
+                                   ?? new ReservasPorDiaDTO { DiaSemana = dia, TotalReservas = 0 })
+                    .ToList();
+
+                return (true, "OK", resultadoCompleto);
             }
             catch (Exception ex)
             {
                 return (false, $"Error al obtener reservas por día: {ex.Message}", new List<ReservasPorDiaDTO>());
             }
         }
+
+
         public async Task<(bool Success, string Message)> CambiarEstadoPagoDeReservaAsync(int reservaId, EstadoPago nuevoEstado)
         {
             var pagos = await _pagoRepo.GetWhereAsync(p => p.ReservaId == reservaId);
@@ -451,7 +339,5 @@ namespace bookme_backend.BLL.Services
 
             return (true, "Estado del pago actualizado correctamente.");
         }
-
-
     }
 }

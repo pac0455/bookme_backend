@@ -16,7 +16,7 @@ public partial class Pago
     public int ReservaId { get; set; }
 
     [Column("monto", TypeName = "decimal(10, 2)")]
-    public decimal? Monto { get; set; }
+    public decimal Monto { get; set; }
 
     [Column("fecha_pago", TypeName = "datetime")]
     public DateTime? FechaPago { get; set; }

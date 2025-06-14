@@ -25,7 +25,7 @@ namespace bookme_backend.API.Controllers
         }
 
         // GET: api/Servicio
-        [Authorize(Roles = "NEGOCIO,CLIENTE")]
+        [Authorize(Roles = "NEGOCIO,CLIENTE,ADMIN")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Servicio>>> GetServicios()
         {
@@ -33,8 +33,9 @@ namespace bookme_backend.API.Controllers
             return Ok(servicios);
         }
 
+
         // GET: api/Servicio/Negocio/5
-        [Authorize(Roles = "NEGOCIO")]
+        [Authorize(Roles = "NEGOCIO,CLIENTE,ADMIN")]
         [HttpGet("Negocio/{negocioId}")]
         public async Task<ActionResult> GetServiciosByNegocioId(int negocioId)
         {
@@ -47,6 +48,7 @@ namespace bookme_backend.API.Controllers
 
         // GET: api/Servicio/Detalle/Negocio/5
         [HttpGet("Detalle/Negocio/{negocioId}")]
+        [Authorize(Roles = "NEGOCIO,CLIENTE,ADMIN")]
         public async Task<ActionResult> GetServiciosDetalleByNegocioId(int negocioId)
         {
             var (success, message, serviciosDetalle) = await _servicioService.GetServiciosDetalleByNegocioIdAsync(negocioId);
@@ -57,7 +59,7 @@ namespace bookme_backend.API.Controllers
         }
 
         // GET: api/Servicio/5
-        [Authorize(Roles = "NEGOCIO")]
+        [Authorize(Roles = "NEGOCIO,CLIENTE,ADMIN")]
         [HttpGet("{id}")]
         public async Task<ActionResult<Servicio>> GetServicio(int id)
         {
@@ -83,7 +85,7 @@ namespace bookme_backend.API.Controllers
 
         // POST: api/Servicio
         [HttpPost]
-        [Authorize(Roles = "NEGOCIO")]
+        [Authorize(Roles = "NEGOCIO,ADMIN")]
         [Consumes("multipart/form-data")]
         public async Task<ActionResult> PostServicio([FromForm] ServicioDto servicio)
         {
@@ -96,7 +98,7 @@ namespace bookme_backend.API.Controllers
         }
         // PUT: api/Servicio/5
         [HttpPut("{id}")]
-        [Authorize(Roles = "NEGOCIO")]
+        [Authorize(Roles = "NEGOCIO,ADMIN")]
         public async Task<IActionResult> PutServicio(int id, ServicioUpdateDto servicio)
         {
             var (success, message, servicioActualizado) = await _servicioService.UpdateServicioAsync(id, servicio);
@@ -107,7 +109,7 @@ namespace bookme_backend.API.Controllers
         }
 
         [HttpPut("{id}/imagen")]
-        [Authorize(Roles = "NEGOCIO")]
+        [Authorize(Roles = "NEGOCIO,ADMIN")]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> PutImagenServicio(int id, [FromForm] Imagen imagen)
         {
@@ -132,7 +134,7 @@ namespace bookme_backend.API.Controllers
         }
         // GET: api/Servicio/Detalle
         [HttpGet("Detalle")]
-        [Authorize(Roles = "NEGOCIO,CLIENTE")]
+        [Authorize(Roles = "NEGOCIO,ADMIN,CLIENTE")]
         public async Task<ActionResult> GetServiciosDetalle()
         {
             var (success, message, serviciosDetalle) = await _servicioService.GetServiciosDetalleAsync();

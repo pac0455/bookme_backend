@@ -7,6 +7,7 @@ using System.Security.Claims;
 using bookme_backend.DataAcces.Repositories.Interfaces;
 using System.Drawing;
 using bookme_backend.DataAcces.DTO;
+using bookme_backend.DataAcces.DTO.NegocioDTO;
 
 namespace bookme_backend.UI
 {
@@ -64,7 +65,7 @@ namespace bookme_backend.UI
                     return Unauthorized("No se pudo obtener el ID del usuario.");
                 }
 
-                var (success, message, negocios) = await _negocioService.GetByUserId(usuarioId);
+                var (success, message, negocios) = await _negocioService.GetNegociosByUserId(usuarioId);
 
                 if (!success)
                 {
@@ -183,22 +184,44 @@ namespace bookme_backend.UI
                 return BadRequest($"Ocurrió un error: {ex.Message}");
             }
         }
-
-        [Authorize(Roles = "NEGOCIO")]
+        [Authorize(Roles = "NEGOCIO,ADMIN")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteNegocio(int id)
         {
-            var negocio = await _context.Negocios.FindAsync(id);
-            if (negocio == null)
-            {
-                return NotFound();
-            }
+            var usuarioId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(usuarioId))
+                return Unauthorized("No se pudo obtener el ID del usuario.");
 
-            _context.Negocios.Remove(negocio);
-            await _context.SaveChangesAsync();
+            // Obtener roles del usuario desde los claims
+            var roles = User.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
+            string motivoCancelacionReservas;
+
+            // Si no se pasa motivo o está vacío, lo asignamos según el rol
+    
+            
+            if (roles.Contains(ERol.NEGOCIO.ToString()))
+            {
+                motivoCancelacionReservas = "Negocio borrado, por eso se cancelan las reservas";
+            }
+            else if (roles.Contains(ERol.ADMIN.ToString()))
+            {
+                motivoCancelacionReservas = "Borrado por administrador por incumplimiento de normas de la comunidad";
+            }
+            else
+            {
+                motivoCancelacionReservas = "Borrado por motivo desconocido";
+            }
+            
+
+            var (success, message) = await _negocioService.DeleteAsync(id, usuarioId, motivoCancelacionReservas);
+
+            if (!success)
+                return BadRequest(message);
 
             return NoContent();
         }
+
+
         [Authorize(Roles = "NEGOCIO")]
         [HttpGet("{id}/reservas")]
         public async Task<IActionResult> GetReservasByNegocioId(int id)
@@ -214,19 +237,41 @@ namespace bookme_backend.UI
             return Ok(reservas);
         }
 
-        [HttpGet("{id}/reservas/detalladas")]
-        [Authorize(Roles = "NEGOCIO")]
-        public async Task<IActionResult> GetReservasDetalladas(int id)
+        [HttpGet("getAll")]
+        [Authorize(Roles = "ADMIN")]
+        public async Task<IActionResult> GetAll()
         {
-            var (success, message, reservas) = await _negocioService.GetReservasDetalladasByNegocioIdAsync(id);
-
-            if (!success)
+            try
             {
-                _logger.LogError($"Error al obtener reservas detalladas del negocio {id}: {message}");
-                return BadRequest(message);
-            }
+                var (succes,message,data ) = await _negocioService.GetAllNegocios();
+                if (!succes)
+                    return BadRequest(new GetAllNegociosResponse
+                    {
+                        Success = false,
+                        Message = "No se pueden los negocios",
+                        InnerMessage = message, // Mensaje para detalles técnicos
+                        Data = null
+                    });
 
-            return Ok(reservas);
+                return Ok(new GetAllNegociosResponse
+                {
+                    Success = true,
+                    Message = "Negocios obtenidos correctamente",
+                    InnerMessage = null,
+                    Data = data
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error inesperado");
+
+                return StatusCode(500, new GetAllNegociosResponse
+                {
+                    Success = false,
+                    Message = "Ocurrió un error inesperado. Intente más tarde.",
+                    Data = null
+                });
+            }
         }
 
 
@@ -271,6 +316,36 @@ namespace bookme_backend.UI
             }
 
             return Ok(negocio);
+        }
+
+        [Authorize(Roles = "ADMIN")]
+        [HttpPut("{id}/bloquear")]
+        public async Task<IActionResult> BloquearNegocio(int id)
+        {
+            var usuarioId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(usuarioId))
+                return Unauthorized("No se pudo obtener el ID del usuario.");
+
+            var (success, message) = await _negocioService.BloquearNegocioAsync(id, usuarioId);
+            if (!success)
+                return BadRequest(message);
+
+            return Ok(new { Message = message });
+        }
+
+        [Authorize(Roles = "ADMIN")]
+        [HttpPut("{id}/desbloquear")]
+        public async Task<IActionResult> DesbloquearNegocio(int id)
+        {
+            var usuarioId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(usuarioId))
+                return Unauthorized("No se pudo obtener el ID del usuario.");
+
+            var (success, message) = await _negocioService.DesbloquearNegocioAsync(id, usuarioId);
+            if (!success)
+                return BadRequest(message);
+
+            return Ok(new { Message = message });
         }
     }
 }
