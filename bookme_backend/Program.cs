@@ -15,7 +15,6 @@ using Microsoft.IdentityModel.Tokens;
 using bookme_backend.Services;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.DependencyInjection;
-
 using bookme_backend.DataAcces.DTO.Google;
 using System.Text.Json.Serialization;
 using bookme_backend.DataAcces.Seeds;
@@ -27,8 +26,6 @@ namespace bookme_backend
         public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-            //Crear roles
-
 
             // JWT Authentication
             builder.Services.AddAuthentication(options =>
@@ -47,28 +44,29 @@ namespace bookme_backend
                     ValidIssuer = builder.Configuration["Jwt:Issuer"],
                     ValidAudience = builder.Configuration["Jwt:Audience"],
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
-
                     RoleClaimType = ClaimTypes.Role,
                     NameClaimType = ClaimTypes.NameIdentifier
                 };
             });
 
-            //Configurar firebase auth
+            // Firebase auth config
             FirebaseApp.Create(new AppOptions()
             {
                 Credential = GoogleCredential.FromFile("bookme-firebaseKeys.json"),
             });
-            //Configurar conexion
-            builder.Services.AddDbContext<BookmeContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-            // Add services to the container.
+            // DbContext
+            builder.Services.AddDbContext<BookmeContext>(options =>
+                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+            // Controllers + JSON enums
             builder.Services
                 .AddControllers(options => options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true)
                 .AddJsonOptions(options =>
                 {
                     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
                 });
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(c =>
             {
@@ -99,20 +97,14 @@ namespace bookme_backend
                         new string[] {}
                     }
                 });
-
             });
 
-            //APi key
+            // API Key & Services registration
             builder.Services.Configure<GoogleMapsSettings>(builder.Configuration.GetSection("GoogleMaps"));
             builder.Services.AddHttpClient<NegocioService>();
 
-
-
-            // Registrar servicios
             builder.Services.AddSingleton<AuthCodeStore>();
             builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-
-
             builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
             builder.Services.AddScoped<IUsuarioService, UsuarioService>();
             builder.Services.AddScoped<IHorarioService, HorarioService>();
@@ -124,13 +116,13 @@ namespace bookme_backend
             builder.Services.AddScoped<INegocioService, NegocioService>();
             builder.Services.AddScoped<ICustomEmailSender, EmailSender>();
 
-
             builder.Logging.AddDebug();
             builder.Logging.AddConsole();
-            // Registra primero la implementación concreta como Singleton
-            //Hasher
+
+            // Password hasher
             builder.Services.AddScoped<IPasswordHelper, PasswordHelper>();
-            //IDENTITY USER
+
+            // Identity Core config
             builder.Services.AddIdentityCore<Usuario>(options =>
             {
                 options.Password.RequireDigit = true;
@@ -152,83 +144,84 @@ namespace bookme_backend
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
-            app.UseStaticFiles(); // Esto habilita wwwroot (por defecto)
 
-            // Sirve archivos de .well-known con tipo JSON (App Links)
+            app.UseStaticFiles();
+
+            // Serve .well-known files as JSON
             var fileRoute = Path.Combine(Directory.GetCurrentDirectory(), "UI", "wwwroot", ".well-known");
-            Console.Write(fileRoute);
             Console.WriteLine($"[INIT] .well-known path: {fileRoute}");
             app.UseStaticFiles(new StaticFileOptions
             {
-               
                 FileProvider = new PhysicalFileProvider(fileRoute),
                 RequestPath = "/.well-known",
                 ServeUnknownFileTypes = true,
                 DefaultContentType = "application/json"
             });
 
+            // Uploads folder static files
             var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
             if (!Directory.Exists(uploadsPath))
-            {
                 Directory.CreateDirectory(uploadsPath);
-            }
 
-
-            // Habilita servir archivos desde la carpeta 'uploads'
             app.UseStaticFiles(new StaticFileOptions
             {
-                FileProvider = new PhysicalFileProvider(
-                    Path.Combine(Directory.GetCurrentDirectory(), "uploads")),
+                FileProvider = new PhysicalFileProvider(uploadsPath),
                 RequestPath = "/uploads"
             });
+
             app.UseHttpsRedirection();
-            app.UseRouting();  // Esto es absolutamente crítico
+            app.UseRouting();
 
             app.UseAuthentication();
             app.UseAuthorization();
 
             app.MapControllers();
 
+            // *** ESTA ES LA CLAVE: Ejecutar migración y seed ANTES del app.Run() ***
+            await SeedDataAsync(app);
 
-            using (var scope = app.Services.CreateScope())
+            app.Run();
+        }
+
+        private static async Task SeedDataAsync(WebApplication app)
+        {
+            using var scope = app.Services.CreateScope();
+            var services = scope.ServiceProvider;
+
+            try
             {
-                var services = scope.ServiceProvider;
+                var dbContext = services.GetRequiredService<BookmeContext>();
+                await dbContext.Database.MigrateAsync();
+                Console.WriteLine("✅ Migraciones aplicadas");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error aplicando migraciones: {ex.Message}");
+            }
 
-                try
-                {
-                    // Aplica migraciones pendientes en la base de datos
-                    var dbContext = services.GetRequiredService<BookmeContext>();
-                    dbContext.Database.Migrate();
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error aplicando migraciones: {ex.Message}");
-                }
+            try
+            {
+                var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+                await IdentitySeeder.SeedRolesAsync(roleManager);
+                Console.WriteLine("✅ Roles sembrados");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al sembrar roles: {ex.Message}");
+            }
 
-                // Sembrar roles al iniciar la aplicación
-                try
-                {
-                    var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
-                    await IdentitySeeder.SeedRolesAsync(roleManager);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error al sembrar roles: {ex.Message}");
-                }
-                try
-                {
-                    var userManager = services.GetRequiredService<UserManager<Usuario>>();
-                    var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+            try
+            {
+                var userManager = services.GetRequiredService<UserManager<Usuario>>();
+                var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+                var usuarioService = services.GetRequiredService<IUsuarioService>();
 
-                    var usuarioService = services.GetRequiredService<IUsuarioService>();
-                    await usuarioService.CreateAdminUserAsync(userManager, roleManager);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error al sembrar datos de identidad: {ex.Message}");
-                }
-
-                app.Run();
+                await usuarioService.CreateAdminUserAsync(userManager, roleManager);
+                Console.WriteLine("✅ Usuario admin creado o verificado");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al sembrar usuario admin: {ex.Message}");
             }
         }
     }

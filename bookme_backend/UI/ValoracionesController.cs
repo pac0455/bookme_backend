@@ -18,7 +18,7 @@ namespace bookme_backend.UI
         }
         // GET: api/Valoraciones/Negocio/5
         [HttpGet("Negocio/{negocioId}")]
-        [Authorize(Roles = "CLIENTE")]
+        [Authorize(Roles = "NEGOCIO,CLIENTE,ADMIN")]
         public async Task<IActionResult> GetValoracionesByNegocioId(int negocioId)
         {
             var (success, message, valoraciones) = await _valoracionesService.GetValoracionesByNegocioId(negocioId);
@@ -28,7 +28,7 @@ namespace bookme_backend.UI
         }
         // POST: api/Valoraciones
         [HttpPost]
-        [Authorize(Roles = "CLIENTE")]
+        [Authorize(Roles = "NEGOCIO,CLIENTE,ADMIN")]
         public async Task<IActionResult> CreateValoracion([FromBody] ValoracionCreateDTO valoracionDto)
         {
             var (success, message, valoracion) = await _valoracionesService.Create(valoracionDto);

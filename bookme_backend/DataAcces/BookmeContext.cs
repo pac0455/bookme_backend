@@ -71,8 +71,14 @@ public partial class BookmeContext : IdentityDbContext<Usuario>
         modelBuilder.Entity<Suscripcion>()
             .Property(s => s.RolNegocio)
             .HasConversion<string>();
+        // Configuración para borrar en cascada Valoraciones cuando se elimina un Usuario
+        modelBuilder.Entity<Valoracion>()
+            .HasOne(v => v.Usuario)
+            .WithMany(u => u.Valoraciones)
+            .HasForeignKey(v => v.UsuarioId)
+            .OnDelete(DeleteBehavior.Cascade);
 
-       
+
         //Seed categoria
         modelBuilder.Entity<Categoria>().HasData(
             new Categoria { Id = 1, Nombre = "Clínica" },

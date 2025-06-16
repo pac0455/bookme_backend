@@ -12,6 +12,9 @@ using bookme_backend.DataAcces.Repositories.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Webp;
+using SixLabors.ImageSharp.Processing;
 
 namespace bookme_backend.BLL.Services
 {
@@ -56,7 +59,7 @@ namespace bookme_backend.BLL.Services
             {
                 await _negocioRepo.AddAsync(negocio);
                 await _negocioRepo.SaveChangesAsync();
-
+                negocio.LogoUpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
                 _logger.LogInformation($"Total horarios recibidos: {negocio.HorariosAtencion?.Count()}");
 
                 var suscripcion = new Suscripcion
@@ -111,9 +114,11 @@ namespace bookme_backend.BLL.Services
         }
         public async Task<(bool Success, string Message, Negocio? Negocio)> UpdateNegocioImagenAsync(int negocioId, Imagen imagen)
         {
+            // ASUMIMOS que imagen.Url es de tipo IFormFile o tiene un método OpenReadStream()
+            // Si tu clase Imagen es diferente, ajusta esta línea
+            IFormFile uploadedFile = imagen.Url as IFormFile;
 
-            var nuevaImagen = imagen.Url;
-            if (nuevaImagen == null || nuevaImagen.Length == 0)
+            if (uploadedFile == null || uploadedFile.Length == 0)
                 return (false, "La imagen no es válida.", null);
 
             var negocio = await _negocioRepo.GetByIdAsync(negocioId);
@@ -126,24 +131,52 @@ namespace bookme_backend.BLL.Services
                 if (!string.IsNullOrWhiteSpace(negocio.LogoUrl))
                 {
                     var rutaAnterior = Path.Combine(Directory.GetCurrentDirectory(), negocio.LogoUrl.Replace("/", Path.DirectorySeparatorChar.ToString()));
-                    if (File.Exists(rutaAnterior))
-                        File.Delete(rutaAnterior);
+                    if (System.IO.File.Exists(rutaAnterior))
+                    {
+                        System.IO.File.Delete(rutaAnterior);
+                    }
                 }
 
-                // Guardar nueva imagen
                 var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "uploads", "negocios");
                 if (!Directory.Exists(uploadsFolder))
                     Directory.CreateDirectory(uploadsFolder);
 
-                var uniqueFileName = $"{Guid.NewGuid()}_{nuevaImagen.FileName}";
-                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+                // --- Lógica de Procesamiento de Imagen ---
+                string newFileNameWithoutExtension = Guid.NewGuid().ToString();
+                string newExtension = ".webp"; // Formato preferido por su eficiencia
+                string finalRelativePath = Path.Combine("uploads", "negocios", newFileNameWithoutExtension + newExtension);
+                string finalFilePath = Path.Combine(Directory.GetCurrentDirectory(), finalRelativePath);
 
-                using (var stream = new FileStream(filePath, FileMode.Create))
+                // Dimensiones máximas y calidad deseada
+                // Estas dimensiones son un buen equilibrio para web/móvil
+                // y evitar imágenes gigantes de cámara
+                int maxWidth = 1200; // Por ejemplo, 1200px de ancho máximo
+                int maxHeight = 900; // Por ejemplo, 900px de alto máximo (ajusta si tus logos son más cuadrados/rectangulares)
+                int quality = 75;    // Calidad del 0 al 100. 75-85 suele ser un buen balance.
+
+                using (var image = await Image.LoadAsync(uploadedFile.OpenReadStream()))
                 {
-                    await nuevaImagen.CopyToAsync(stream);
-                }
+                    // Redimensionar la imagen manteniendo la relación de aspecto
+                    // Se ajusta para que quepa dentro de las dimensiones máximas sin distorsionarse
+                    image.Mutate(x => x.Resize(new ResizeOptions
+                    {
+                        Mode = ResizeMode.Max, // Redimensiona para que el lado más largo no exceda el máximo
+                        Size = new Size(maxWidth, maxHeight)
+                    }));
 
-                negocio.LogoUrl = Path.Combine("uploads", "negocios", uniqueFileName).Replace("\\", "/");
+                    // Guardar la imagen en formato WebP
+                    // WebP ofrece mejor compresión que JPEG o PNG para la mayoría de los casos
+                    await image.SaveAsWebpAsync(finalFilePath, new WebpEncoder { Quality = quality });
+
+                    // Si prefieres JPEG como formato de salida:
+                    // string newExtension = ".jpeg";
+                    // await image.SaveAsJpegAsync(finalFilePath, new JpegEncoder { Quality = quality });
+                }
+                // --- FIN Lógica de Procesamiento de Imagen ---
+
+                // Actualizar la URL con el nuevo nombre de archivo y extensión
+                negocio.LogoUrl = finalRelativePath.Replace("\\", "/");
+                negocio.LogoUpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
                 _negocioRepo.Update(negocio);
                 await _negocioRepo.SaveChangesAsync();
@@ -156,6 +189,7 @@ namespace bookme_backend.BLL.Services
                 return (false, $"Error al actualizar la imagen del negocio: {ex.Message}", null);
             }
         }
+
 
         public async Task<(bool Success, string Message, byte[]? ImageBytes, string ContentType)> GetNegocioImagenAsync(int negocioId)
         {

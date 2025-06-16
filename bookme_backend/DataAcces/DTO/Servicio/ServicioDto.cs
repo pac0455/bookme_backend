@@ -9,7 +9,7 @@
         public decimal Precio { get; set; }
 
         public IFormFile? Imagen { get; set; }
-
+        public long? ImagenUpdatedAt { get; set; } 
 
         // Método estático de conversión
         public Models.Servicio ToServicio(string? imagenUrl = null)

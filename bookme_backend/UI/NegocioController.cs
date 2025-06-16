@@ -49,7 +49,7 @@ namespace bookme_backend.UI
 
             return negocio;
         }
-        [Authorize(Roles = "NEGOCIO")]
+        [Authorize(Roles = "NEGOCIO,ADMIN")]
         [HttpGet("ByUserId")]
         public async Task<ActionResult<IEnumerable<Negocio>>> GetNegiciosByUserID()
         {
@@ -82,7 +82,7 @@ namespace bookme_backend.UI
             }
         }
 
-        [Authorize(Roles = "NEGOCIO")]
+        [Authorize(Roles = "NEGOCIO,ADMIN")]
         [HttpPut("{id}/imagen")]
         public async Task<IActionResult> UpdateNegocioImagen(int id, Imagen nuevaImagen)
         {
@@ -111,7 +111,8 @@ namespace bookme_backend.UI
 
             return File(imageBytes, contentType);
         }
-        [Authorize(Roles = "NEGOCIO")]
+        [Authorize(Roles = "NEGOCIO,ADMIN")]
+
         [HttpPut("{id}")]
         public async Task<IActionResult> PutNegocio(int id, Negocio negocio)
         {
@@ -129,7 +130,8 @@ namespace bookme_backend.UI
 
             return NoContent();
         }
-        [Authorize(Roles = "NEGOCIO")]
+        [Authorize(Roles = "NEGOCIO,ADMIN")]
+
         [HttpPut("ByNombre/{nombre}")]
         public async Task<IActionResult> PutNegocioPorNombre(string nombre, [FromBody] Negocio negocio)
         {
@@ -150,7 +152,8 @@ namespace bookme_backend.UI
 
         // POST: api/Negocios
         [HttpPost]
-        [Authorize(Roles = "NEGOCIO")]
+        [Authorize(Roles = "NEGOCIO,ADMIN")]
+
         public async Task<ActionResult<Negocio>> PostNegocio(Negocio negocio)
         {
             try
@@ -222,7 +225,7 @@ namespace bookme_backend.UI
         }
 
 
-        [Authorize(Roles = "NEGOCIO")]
+        [Authorize(Roles = "NEGOCIO,ADMIN")]
         [HttpGet("{id}/reservas")]
         public async Task<IActionResult> GetReservasByNegocioId(int id)
         {
@@ -276,7 +279,7 @@ namespace bookme_backend.UI
 
 
         [HttpGet("{id}/servicios")]
-        [Authorize(Roles = "NEGOCIO,CLIENTE")]
+        [Authorize(Roles = "ADMIN,NEGOCIO,CLIENTE")]
         public async Task<IActionResult> GetServiciosByNegocioId(int id)
         {
             var (success, message, servicios) = await _negocioService.GetServiciosByNegocioIdAsync(id);

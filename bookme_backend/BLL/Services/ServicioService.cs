@@ -9,20 +9,27 @@ using bookme_backend.BLL.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using bookme_backend.DataAcces.DTO;
 using Microsoft.EntityFrameworkCore;
-using bookme_backend.API.Controllers;
-using Microsoft.AspNetCore.Mvc;
+
 using bookme_backend.DataAcces.DTO.Servicio;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Webp;
+using SixLabors.ImageSharp.Processing;
 
 
 namespace bookme_backend.Services
 {
+    /// <summary>
+    /// Servicio que maneja operaciones de lógica de negocio relacionadas con los "Servicios" de un negocio.
+    /// </summary>
     public class ServicioService : IServicioService
     {
+        // Repositorios genéricos para acceder a la base de datos
         private readonly IRepository<Negocio> _negocioRepo;
         private readonly IRepository<Reserva> _reservaRepo;
         private readonly IRepository<Servicio> _servicioRepo;
         private readonly ILogger<ServicioService> _logger;
 
+        // Constructor con inyección de dependencias
         public ServicioService(
             IRepository<Negocio> negocioRepo,
             IRepository<Reserva> reservaRepo,
@@ -34,6 +41,7 @@ namespace bookme_backend.Services
             _servicioRepo = servicioRepo;
             _logger = logger;
         }
+
 
         /// <summary>
         /// Obtiene los servicios que están reservados en un negocio específico.
@@ -114,19 +122,40 @@ namespace bookme_backend.Services
             {
                 if (dto.Imagen != null && dto.Imagen.Length > 0)
                 {
+                    IFormFile uploadedFile = dto.Imagen; 
+
                     var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "uploads", "servicios");
                     if (!Directory.Exists(uploadsFolder))
                         Directory.CreateDirectory(uploadsFolder);
 
-                    var uniqueFileName = $"{Guid.NewGuid()}_{dto.Imagen.FileName}";
-                    var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+                    string newFileNameWithoutExtension = Guid.NewGuid().ToString();
+                    string newExtension = ".webp"; // Formato preferido
+                    string finalRelativePath = Path.Combine("uploads", "servicios", newFileNameWithoutExtension + newExtension);
+                    string finalFilePath = Path.Combine(Directory.GetCurrentDirectory(), finalRelativePath);
 
-                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    // Dimensiones máximas y calidad deseada
+                    int maxWidth = 1200;
+                    int maxHeight = 900;
+                    int quality = 75;
+
+                    using (var image = await Image.LoadAsync(uploadedFile.OpenReadStream()))
                     {
-                        await dto.Imagen.CopyToAsync(stream);
+                        image.Mutate(x => x.Resize(new ResizeOptions
+                        {
+                            Mode = ResizeMode.Max,
+                            Size = new Size(maxWidth, maxHeight)
+                        }));
+
+                        await image.SaveAsWebpAsync(finalFilePath, new WebpEncoder { Quality = quality });
                     }
 
-                    servicio.ImagenUrl = Path.Combine("uploads", "servicios", uniqueFileName).Replace("\\", "/");
+                    servicio.ImagenUrl = finalRelativePath.Replace("\\", "/");
+                    servicio.ImagenUpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(); // Update timestamp
+                }
+                else
+                {
+                    servicio.ImagenUrl = null; // or a default image URL if you have one
+                    servicio.ImagenUpdatedAt = null; // No image, no timestamp
                 }
 
                 await _servicioRepo.AddAsync(servicio);
@@ -228,8 +257,9 @@ namespace bookme_backend.Services
 
         public async Task<(bool Success, string Message)> UpdateImagenServicioAsync(int servicioId, Imagen nuevaImagen)
         {
-            var imagen= nuevaImagen.Url;
-            if (imagen == null || imagen.Length == 0)
+            IFormFile uploadedFile = nuevaImagen.Url as IFormFile;
+
+            if (uploadedFile == null || uploadedFile.Length == 0)
                 return (false, "La nueva imagen es inválida.");
 
             var servicio = await _servicioRepo.GetByIdAsync(servicioId);
@@ -238,7 +268,7 @@ namespace bookme_backend.Services
 
             try
             {
-                // Eliminar la imagen anterior si existe
+                // Delete the old image if it exists
                 if (!string.IsNullOrWhiteSpace(servicio.ImagenUrl))
                 {
                     var oldImagePath = Path.Combine(Directory.GetCurrentDirectory(), servicio.ImagenUrl.Replace("/", Path.DirectorySeparatorChar.ToString()));
@@ -246,20 +276,39 @@ namespace bookme_backend.Services
                         File.Delete(oldImagePath);
                 }
 
-                // Guardar la nueva imagen
+                // Define the uploads folder
                 var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "uploads", "servicios");
                 if (!Directory.Exists(uploadsFolder))
                     Directory.CreateDirectory(uploadsFolder);
 
-                var uniqueFileName = $"{Guid.NewGuid()}_{imagen.FileName}";
-                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+                // --- Image Processing Logic ---
+                string newFileNameWithoutExtension = Guid.NewGuid().ToString();
+                string newExtension = ".webp"; // Preferred format
+                string finalRelativePath = Path.Combine("uploads", "servicios", newFileNameWithoutExtension + newExtension);
+                string finalFilePath = Path.Combine(Directory.GetCurrentDirectory(), finalRelativePath);
 
-                using (var stream = new FileStream(filePath, FileMode.Create))
+                // Set desired max dimensions and quality for optimization
+                int maxWidth = 1200; // Max width for the image
+                int maxHeight = 900; // Max height for the image (adjust as needed)
+                int quality = 75;    // Quality (0-100) for WebP/JPEG compression
+
+                using (var image = await Image.LoadAsync(uploadedFile.OpenReadStream()))
                 {
-                    await imagen.CopyToAsync(stream);
-                }
+                    // Resize the image, maintaining aspect ratio
+                    image.Mutate(x => x.Resize(new ResizeOptions
+                    {
+                        Mode = ResizeMode.Max, // Scales down to fit within bounds
+                        Size = new Size(maxWidth, maxHeight)
+                    }));
 
-                servicio.ImagenUrl = Path.Combine("uploads", "servicios", uniqueFileName).Replace("\\", "/");
+                    // Save the processed image in WebP format
+                    await image.SaveAsWebpAsync(finalFilePath, new WebpEncoder { Quality = quality });
+                }
+                // --- End Image Processing Logic ---
+
+                // Update the service's image URL and the timestamp
+                servicio.ImagenUrl = finalRelativePath.Replace("\\", "/");
+                servicio.ImagenUpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(); // Crucial for cache busting
 
                 _servicioRepo.Update(servicio);
                 await _servicioRepo.SaveChangesAsync();
@@ -272,6 +321,7 @@ namespace bookme_backend.Services
                 return (false, $"Error inesperado: {ex.Message}");
             }
         }
+
         /// <summary>
         /// Obtiene detalles de los servicios de un negocio, incluyendo datos relacionados como valoraciones y reservas.
         /// </summary>
@@ -357,6 +407,9 @@ namespace bookme_backend.Services
             }
         }
 
+        /// <summary>
+        /// Devuelve información detallada de todos los servicios disponibles.
+        /// </summary>
         public async Task<(bool Success, string Message, List<ServicioDetalleDto> Servicios)> GetServiciosDetalleAsync()
         {
             try

@@ -288,9 +288,10 @@ namespace bookme_backend.BLL.Services
             _usuarioRepository.Update(usuario);
         }
 
-        public async Task<(bool Success, string Message)> DeleteAsync(string id)
+        public async Task<(bool Success, string Message)> DeleteAsync(string email)
         {
-            var usuario = await _userManager.FindByIdAsync(id);
+            var usuario = await _userManager.FindByEmailAsync(email);
+
 
             if (usuario == null)
             {

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using bookme_backend.DataAcces.Models;
 
@@ -11,9 +12,11 @@ using bookme_backend.DataAcces.Models;
 namespace bookme_backend.Migrations
 {
     [DbContext(typeof(BookmeContext))]
-    partial class BookmeContextModelSnapshot : ModelSnapshot
+    [Migration("20250615195742_negocioConNombre")]
+    partial class negocioConNombre
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -377,10 +380,6 @@ namespace bookme_backend.Migrations
                         .HasColumnType("float")
                         .HasColumnName("latitud");
 
-                    b.Property<long?>("LogoUpdatedAt")
-                        .HasColumnType("bigint")
-                        .HasColumnName("logo_updated_at");
-
                     b.Property<string>("LogoUrl")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)")
@@ -551,10 +550,6 @@ namespace bookme_backend.Migrations
                     b.Property<int>("DuracionMinutos")
                         .HasColumnType("int")
                         .HasColumnName("duracion_minutos");
-
-                    b.Property<long?>("ImagenUpdatedAt")
-                        .HasColumnType("bigint")
-                        .HasColumnName("imagen_updated_at");
 
                     b.Property<string>("ImagenUrl")
                         .HasMaxLength(500)

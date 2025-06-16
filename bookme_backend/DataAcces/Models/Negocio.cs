@@ -6,7 +6,6 @@ using Microsoft.EntityFrameworkCore;
 namespace bookme_backend.DataAcces.Models;
 
 [Table("negocios")]
-[Index(nameof(Nombre), IsUnique = true)]
 public partial class Negocio
 {
     [Key]
@@ -24,9 +23,11 @@ public partial class Negocio
     [Column("direccion")]
     [StringLength(255), Required]
     public string Direccion { get; set; }
+
     [Column("logo")]
     [StringLength(255)]
     public string? LogoUrl { get; set; }
+
     [Column("latitud"), Required]
     public double? Latitud { get; set; }
     [Column("longitud"), Required]
@@ -34,10 +35,15 @@ public partial class Negocio
     [Column("categoria"), Required]
     public int CategoriaId { get; set; }
 
-    [ForeignKey("CategoriaId")] public virtual
-    Categoria Categoria { get; set; }
+    [ForeignKey("CategoriaId")] 
+    public virtual Categoria? Categoria { get; set; }
+
+    [Column("logo_updated_at")] 
+    public long? LogoUpdatedAt { get; set; } 
+
     [Column("activo")]
     public bool Activo { get; set; }
+
     [Column("eliminado")]
     public bool Eliminado { get; set; } = false;
     public bool Bloqueado { get; set; } = false;

@@ -30,6 +30,9 @@ public partial class Servicio
     [StringLength(500)]
     public string? ImagenUrl { get; set; }
 
+    [Column("imagen_updated_at")]
+    public long? ImagenUpdatedAt { get; set; }
+
     [ForeignKey("NegocioId")]
     [InverseProperty("Servicios")]
     public virtual Negocio Negocio { get; set; } = null!;
