@@ -417,7 +417,8 @@ namespace bookme_backend.Migrations
                     { 22, "Mecánica" },
                     { 23, "Electricista" },
                     { 24, "Fontanero" },
-                    { 25, "Fotografía" }
+                    { 25, "Fotografía" },
+                    { 26, "Otros" }
                 });
 
             migrationBuilder.CreateIndex(

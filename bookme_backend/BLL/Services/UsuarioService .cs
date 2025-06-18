@@ -123,7 +123,6 @@ namespace bookme_backend.BLL.Services
             if (!result.Succeeded)
             {
                 // Esto ya no debería ocurrir si ValidarErroresRegistroAsync valida correctamente.
-                // Pero puedes dejarlo por seguridad como fallback.
                 foreach (var error in result.Errors)
                 {
                     errores["password"] = errores.ContainsKey("password")
@@ -260,7 +259,18 @@ namespace bookme_backend.BLL.Services
 
         public async Task<List<Usuario>> GetAllAsync()
         {
-            return await _usuarioRepository.GetAllAsync();
+            // Obtener todos los usuarios
+            var todosLosUsuarios = await _userManager.Users.ToListAsync();
+
+            // Obtener los usuarios con el rol ADMIN
+            var usuariosAdmin = await _userManager.GetUsersInRoleAsync(ERol.ADMIN.ToString());
+
+            // Excluir los que están en la lista de admins
+            var usuariosNoAdmin = todosLosUsuarios
+                .Where(u => !usuariosAdmin.Any(admin => admin.Id == u.Id))
+                .ToList();
+
+            return usuariosNoAdmin;
         }
 
         public async Task<Usuario?> ObtenerPorFirebaseUidAsync(string uid)
@@ -268,7 +278,7 @@ namespace bookme_backend.BLL.Services
             return await _usuarioRepository.GetByFirebaseUidAsync(uid);
         }
 
-       
+        
         public async Task<Usuario?> GetByIdAsync(int id)
         {
             var usuario = await _usuarioRepository.GetByIdAsync(id);

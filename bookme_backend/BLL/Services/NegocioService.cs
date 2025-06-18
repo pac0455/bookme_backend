@@ -45,6 +45,7 @@ namespace bookme_backend.BLL.Services
         private readonly IRepository<Servicio> _servicioRepo = servicioRepo;
         private readonly ILogger<NegocioService> _logger = logger;
         private readonly GoogleMapsSettings _googleMapsSettings = googleMapsOptions.Value;
+        
 
         //Fucion auxiliar para sacar negocio
 
@@ -152,7 +153,7 @@ namespace bookme_backend.BLL.Services
                 // y evitar imágenes gigantes de cámara
                 int maxWidth = 1200; // Por ejemplo, 1200px de ancho máximo
                 int maxHeight = 900; // Por ejemplo, 900px de alto máximo (ajusta si tus logos son más cuadrados/rectangulares)
-                int quality = 75;    // Calidad del 0 al 100. 75-85 suele ser un buen balance.
+                int quality = 60;    // Calidad del 0 al 100. 75-85 suele ser un buen balance.
 
                 using (var image = await Image.LoadAsync(uploadedFile.OpenReadStream()))
                 {
